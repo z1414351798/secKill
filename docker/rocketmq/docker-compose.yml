@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  namesrv:
+    image: apache/rocketmq:5.3.2  # Use the latest stable 5.x image
+    container_name: rmqnamesrv
+    ports:
+      - 9876:9876
+    volumes:
+      - ./rocketmq/namesrv/logs:/home/rocketmq/logs
+    command: sh mqnamesrv
+
+  broker:
+    image: apache/rocketmq:5.3.2
+    container_name: rmqbroker
+    ports:
+      - 10909:10909
+      - 10911:10911
+      - 10912:10912
+      - 7071:8081
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+      - JAVA_OPT_EXT=-Xms512m -Xmx512m -Xmn256m
+    volumes:
+      - ./rocketmq/broker/logs:/home/rocketmq/logs
+      - ./rocketmq/broker/store:/home/rocketmq/store
+      # Mount the config file
+      - ./rocketmq/broker/conf/broker.conf:/home/rocketmq/conf/broker.conf
+    # Tell the broker to use the custom config file
+    command: sh mqbroker -c /home/rocketmq/conf/broker.conf --enable-proxy
+    depends_on:
+      - namesrv
+
+
