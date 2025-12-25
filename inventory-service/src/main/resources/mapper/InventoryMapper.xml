@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.inventory_service.mapper.InventoryMapper">
+    <resultMap id="InventoryMap" type="com.z.shop.common.Inventory">
+        <id property="skuId" column="sku_id"/>
+        <result property="total" column="total"/>
+        <result property="available" column="available"/>
+        <result property="locked" column="locked"/>
+    </resultMap>
+    <update id="deduct">
+        update inventory
+        set available = available - #{qty}
+        where sku_id = #{skuId}
+        and available >= #{qty}
+    </update>
+    <insert id="save" parameterType="com.z.shop.common.Inventory">
+        insert into inventory(
+        sku_id, total, available, locked)
+        values(
+        #{skuId}, #{total}, #{available}, #{locked})
+    </insert>
+    <select id="findAll" resultMap="InventoryMap">
+        select sku_id, total, available, locked
+        from inventory
+    </select>
+    <update id="confirm">
+        update inventory
+        set locked = locked - #{qty}
+        where sku_id = #{skuId}
+    </update>
+    <update id="rollback">
+        update inventory
+        set locked = locked - #{qty},
+        available = available + #{qty}
+        where sku_id = #{skuId}
+    </update>
+</mapper>

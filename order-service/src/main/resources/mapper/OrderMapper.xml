@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.order_service.mapper.OrderMapper">
+    <resultMap id="OrderMap" type="com.z.shop.common.Order">
+        <id property="orderId" column="order_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="skuId" column="sku_id"/>
+        <result property="qty" column="qty"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <update id="updateStatusAndPayingAtWhenInit">
+        update orders set status = #{status}, paying_at = #{payingAt}, update_time = now() where order_id = #{orderId} and status  = 'INIT'
+    </update>
+    <update id="updateStatusWhenPaying">
+        update orders set status = #{status}, update_time = now()  where order_id = #{orderId} and status  = 'PAYING'
+    </update>
+    <update id="updateStatusByOrderId">
+        update orders set status = #{status}, update_time = now()  where order_id = #{orderId}
+    </update>
+    <insert id="insertIgnore" parameterType="com.z.shop.common.Order">
+        insert ignore into orders(
+        order_id, user_id, sku_id, qty, status, create_time, update_time)
+        values(
+        #{orderId}, #{userId}, #{skuId}, #{qty}, #{status}, now(), now())
+    </insert>
+    <select id="findById" resultMap="OrderMap">
+        select
+        order_id, user_id, sku_id, qty, status, create_time, update_time
+        from orders where order_id = #{orderId}
+    </select>
+    <update id="timeoutCancel">
+        UPDATE orders
+        SET status = 'CANCEL',
+        update_time = NOW()
+        WHERE order_id = #{orderId} and status = 'INIT'
+    </update>
+
+    <update id="confirm">
+        UPDATE orders
+        SET status = 'CONFIRM',
+        update_time = NOW()
+        WHERE order_id = #{orderId} and status = 'INIT'
+    </update>
+
+    <update id="rollback">
+        UPDATE orders
+        SET status = 'ROLLBACK',
+        update_time = NOW()
+        WHERE order_id = #{orderId} and status = 'INIT'
+    </update>
+
+    <select id="selectTimeoutOrders" resultType="long">
+        SELECT order_id
+        FROM orders
+        WHERE status IN ('INIT','PAYING')
+        AND (
+        (status = 'INIT'
+        AND create_time <![CDATA[ < ]]> NOW() - INTERVAL 5 MINUTE)
+        OR (status = 'PAYING'
+        AND paying_at <![CDATA[ < ]]> NOW() - INTERVAL 5 MINUTE)
+        )
+        ORDER BY create_time
+        LIMIT #{limit}
+    </select>
+
+    <update id="markPaid">
+        UPDATE orders
+        SET status = 'PAID',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'PAYING'
+    </update>
+
+
+
+</mapper>

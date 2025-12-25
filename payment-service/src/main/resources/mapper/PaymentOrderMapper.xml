@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.payment_service.mapper.PaymentOrderMapper">
+
+    <select id="selectByOrderId" resultType="PaymentOrder">
+        select * from payment_order where order_id = #{orderId}
+    </select>
+
+    <insert id="insertIgnore">
+        insert ignore into payment_order
+        (order_id, sku_id, qty, status, create_time, update_time)
+        values
+        (#{orderId}, #{skuId}, #{qty}, #{status}, now(), now())
+    </insert>
+
+    <update id="updateStatus">
+        update payment_order
+        set status = #{status}, update_time = now()
+        where order_id = #{orderId}
+        and status != 'SUCCESS'
+    </update>
+
+</mapper>

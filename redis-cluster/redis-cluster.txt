@@ -1,0 +1,280 @@
+1️⃣ 下载和安装 Redis 6
+brew install redis@6
+
+
+确认安装：
+
+redis-server -v
+# Redis server v=6.x.x ...
+
+2️⃣ 创建 Redis 配置文件和数据目录
+
+假设你在 ~/redis-cluster 下操作：
+
+mkdir -p ~/redis-cluster/{7000,7001,7002,7003,7004,7005}
+
+
+为每个节点创建配置文件，比如 7000/redis.conf：
+
+port 7001
+bind 0.0.0.0
+cluster-enabled yes
+cluster-config-file nodes-7001.conf
+cluster-node-timeout 5000
+appendonly yes
+appendfilename "appendonly-7001.aof"
+dir ./
+dbfilename dump-7001.rdb
+save 900 1
+save 300 10
+save 60 10000
+protected-mode no
+logfile "redis-7001.log"
+
+
+依次创建 7000-7005 的配置文件，只修改：
+
+port
+
+cluster-config-file
+
+appendfilename
+
+dbfilename
+
+logfile
+
+3️⃣ 启动 Redis 实例
+
+打开 6 个终端或者用 & 后台启动：
+
+redis-server ~/redis-cluster/7001/redis.conf
+redis-server ~/redis-cluster/7002/redis.conf
+redis-server ~/redis-cluster/7003/redis.conf
+redis-server ~/redis-cluster/7004/redis.conf
+redis-server ~/redis-cluster/7005/redis.conf
+redis-server ~/redis-cluster/7006/redis.conf
+
+4️⃣ 创建 Redis Cluster
+
+用 redis-cli --cluster create 连接 6 个节点：
+
+redis-cli --cluster create \
+127.0.0.1:7001 \
+127.0.0.1:7002 \
+127.0.0.1:7003 \
+127.0.0.1:7004 \
+127.0.0.1:7005 \
+127.0.0.1:7006 \
+--cluster-replicas 1
+
+
+输出会要求确认 yes，完成后你就有 3 主 3 从的 cluster。
+
+5️⃣ 检查 cluster 状态
+redis-cli -p 7001 cluster info
+redis-cli -p 7001 cluster nodes
+
+
+🔻 步骤 1：优雅关闭所有节点
+
+进入每个节点目录，执行 shutdown：
+
+redis-cli -p 7001 shutdown
+redis-cli -p 7002 shutdown
+redis-cli -p 7003 shutdown
+redis-cli -p 7004 shutdown
+redis-cli -p 7005 shutdown
+redis-cli -p 7006 shutdown
+
+
+如果某些节点关闭卡住或报错（常见），执行强制 kill：
+
+ps aux | grep redis
+kill -9 <pid>
+
+🔺 步骤 2：重新启动所有节点（后台启动）
+redis-server ~/redis-cluster/7001/redis.conf &
+redis-server ~/redis-cluster/7002/redis.conf &
+redis-server ~/redis-cluster/7003/redis.conf &
+redis-server ~/redis-cluster/7004/redis.conf &
+redis-server ~/redis-cluster/7005/redis.conf &
+redis-server ~/redis-cluster/7006/redis.conf &
+
+redis-cli --cluster create \
+  127.0.0.1:7001 \
+  127.0.0.1:7002 \
+  127.0.0.1:7003 \
+  127.0.0.1:7004 \
+  127.0.0.1:7005 \
+  127.0.0.1:7006 \
+  --cluster-replicas 1
+下面给你一个 最全、最实用、面试 & 工作都常用的 Redis 命令速查表。
+分门别类，全部是日常开发里最常用的语法。
+
+🟥 一、Redis 连接与基本操作
+▶ 连接 Redis
+redis-cli -p 7001
+
+▶ PING 检查服务
+PING
+
+▶ 查看所有 key
+KEYS *
+
+▶ 模糊匹配 key
+KEYS user:*
+
+▶ 删除 key
+DEL key
+
+▶ 设置过期时间
+EXPIRE key 60
+TTL key
+
+🟦 二、String 类型（最常用）
+设置值
+SET name andy
+
+获取值
+GET name
+
+自增/自减
+INCR counter
+DECR counter
+INCRBY counter 10
+
+设置过期值
+SET code 123 EX 60
+
+只有不存在时才写（分布式锁常用）
+SETNX lock_key value
+
+🟨 三、Hash（对象结构）
+
+适合保存用户、商品等对象。
+
+设置 Hash 字段
+HSET user:1 name "Andy" age 30
+
+获取一个字段
+HGET user:1 name
+
+获取所有字段
+HGETALL user:1
+
+删除某个字段
+HDEL user:1 age
+
+判断字段是否存在
+HEXISTS user:1 name
+
+🟩 四、List（队列常用）
+从右边 push
+RPUSH queue 1 2 3
+
+从左边 push
+LPUSH queue a b c
+
+从左 pop
+LPOP queue
+
+读取范围
+LRANGE queue 0 -1
+
+阻塞式 pop（消息队列常用）
+BLPOP queue 5
+
+🟧 五、Set（去重集合）
+添加元素
+SADD tags java python go
+
+查看所有元素
+SMEMBERS tags
+
+是否存在
+SISMEMBER tags java
+
+两个集合求交集
+SINTER s1 s2
+
+🟪 六、ZSet（排序集合：排行榜最常用）
+添加元素与分数
+ZADD rank 100 andy
+
+获取排名区间
+ZRANGE rank 0 10 WITHSCORES
+
+获取倒序（分数从大到小）
+ZREVRANGE rank 0 10 WITHSCORES
+
+获取单个分数
+ZSCORE rank andy
+
+自增分数
+ZINCRBY rank 10 andy
+
+🟫 七、Key 管理
+查看类型
+TYPE key
+
+key 是否存在
+EXISTS key
+
+改名
+RENAME old new
+
+删除多个 key
+DEL k1 k2 k3
+
+⚫ 八、事务（Transaction）
+开启事务
+MULTI
+
+提交
+EXEC
+
+取消
+DISCARD
+
+⚪ 九、发布订阅（Pub/Sub）
+订阅
+SUBSCRIBE news
+
+发布
+PUBLISH news "hello"
+
+🔵 十、Cluster 常用命令
+查看 cluster 信息
+cluster info
+
+查看节点
+cluster nodes
+
+迁移 slot（运维用）
+redis-cli --cluster reshard 127.0.0.1:7001
+
+集群键存储检查
+CLUSTER KEYSLOT user:1
+
+🔥 十一、Redis 性能调试
+慢查询
+SLOWLOG GET
+
+内存使用情况
+INFO memory
+
+查看 CPU / 连接数 / key 数量
+INFO
+
+🎁 十二、实际项目常用写法（最有价值）
+获取分布式锁
+SET lock_key uuid EX 10 NX
+
+删除锁（保持原子性）
+eval "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end" 1 lock_key uuid
+
+限流（滑动窗口）
+ZADD reqs timestamp member
+ZREMRANGEBYSCORE reqs 0 timestamp-1000
+ZCARD reqs
