@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.shop.user_service.mapper.UserAddressMapper">
+
+    <insert id="insert">
+        INSERT IGNORE INTO user_address(user_id, address_id, is_default)
+        VALUES (#{userId}, #{addressId}, #{isDefault})
+    </insert>
+
+    <update id="clearDefault">
+        UPDATE user_address SET is_default = 0 WHERE user_id = #{userId}
+    </update>
+
+    <update id="setDefault">
+        UPDATE user_address
+        SET is_default = 1
+        WHERE user_id = #{userId} AND address_id = #{addressId}
+    </update>
+
+    <select id="selectAddressByUser" resultType="com.z.shop.user_service.domain.Address">
+        SELECT a.*
+        FROM address a
+        JOIN user_address ua ON a.id = ua.address_id
+        WHERE ua.user_id = #{userId}
+        ORDER BY ua.is_default DESC, ua.created_at DESC
+    </select>
+
+</mapper>

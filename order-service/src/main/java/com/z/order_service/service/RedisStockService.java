@@ -20,6 +20,7 @@ public class RedisStockService {
     private static final DefaultRedisScript<Long> PRE_DEDUCT_SCRIPT;
     private static final DefaultRedisScript<Long> ROLLBACK_DEDUCT_SCRIPT;
     private static final DefaultRedisScript<Long> CONFIRM_DEDUCT_SCRIPT;
+    private static final DefaultRedisScript<Long> IDEMPOTENT_SCRIPT;
 
     static {
         PRE_DEDUCT_SCRIPT = new DefaultRedisScript<>();
@@ -36,6 +37,11 @@ public class RedisStockService {
         CONFIRM_DEDUCT_SCRIPT.setResultType(Long.class);
         CONFIRM_DEDUCT_SCRIPT.setLocation(
                 new ClassPathResource("lua/confirm_deduct.lua")
+        );
+        IDEMPOTENT_SCRIPT = new DefaultRedisScript<>();
+        IDEMPOTENT_SCRIPT.setResultType(Long.class);
+        IDEMPOTENT_SCRIPT.setLocation(
+                new ClassPathResource("lua/user_idempotent.lua")
         );
     }
 
@@ -83,5 +89,17 @@ public class RedisStockService {
         if (r == 0) return FREEZE_NOT_EXIST;
         return SUCCESS;
     }
+
+    public boolean checkUserIdempotent(String skuId, Long userId) {
+        String key = "idempotent:sku:{" + skuId + "}:"+ "user:" + userId;
+        Long result = redisTemplate.execute(
+                IDEMPOTENT_SCRIPT,
+                List.of(key),
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(10 * 60 * 1000) // 10分钟
+        );
+        return result == 1;
+    }
+
 }
 

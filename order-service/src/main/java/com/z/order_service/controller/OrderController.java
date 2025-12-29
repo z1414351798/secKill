@@ -22,7 +22,7 @@ public class OrderController {
     private FastSnowflakeIdGenerator fastSnowflakeIdGenerator;
 
     @PostMapping("/seckill")
-    public Response<Order> seckill(@RequestParam Long userId,
+    public Response<Order> seckill(@RequestHeader("X-User-Id") Long userId,
                                    @RequestParam String skuId,
                                    @RequestParam int qty) {
         return orderService.createOrder(fastSnowflakeIdGenerator.nextId(),userId, skuId, qty);

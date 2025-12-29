@@ -1,0 +1,45 @@
+server:
+  port: 6666
+
+spring:
+  application:
+    name: gateway
+
+  data:
+    redis:
+      cluster:
+        nodes:
+          - 127.0.0.1:7001
+          - 127.0.0.1:7002
+          - 127.0.0.1:7003
+          - 127.0.0.1:7004
+          - 127.0.0.1:7005
+          - 127.0.0.1:7006
+      timeout: 3000ms
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/order-service/**
+
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/payment-service/**
+
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/user-service/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+jwt:
+  public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoYTx6SY6QKfk1toHMN/SqZXs+G6Jncs6W48QNnLANYVHYwLHgTKXKT6PSp/3VODZOxY5RXMoDC7Ckha1FziLIGkkaR1ktNUYSAzn34rKFPPxFU2GTSl6E5R7ZoH8vmZ4jQFj+croZURrTC83EpxRZLFPdB0wYpQa0DEiA3VoYFVs1ZTONCiGH4cPY1OPP3FhCtzxgt1zL1KWaWsLHVB5pN+rL6vZk3n2v7rpv6jb/Vby/x718qCtuQULXRXSJ1bLbdgX/mJq8DQFLT5aOFwQoPJzthgHxCL+N5Is6I7tLI3BlzG55/6ToFUdEJSxbIDVFDi8yELoocnngcRgn4mgdQIDAQAB

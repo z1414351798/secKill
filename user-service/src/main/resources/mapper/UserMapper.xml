@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.shop.user_service.mapper.UserMapper">
+
+    <select id="selectByUsername" resultType="com.z.shop.user_service.domain.User">
+        SELECT * FROM user WHERE username = #{username}
+    </select>
+
+    <select id="selectById" resultType="com.z.shop.user_service.domain.User">
+        SELECT * FROM user WHERE id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO user(id, username, password, mobile, status)
+        VALUES (#{id}, #{username}, #{password}, #{mobile}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE user
+        SET password = #{password},
+        mobile = #{mobile},
+        status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.shop.user_service.mapper.AddressMapper">
+
+    <insert id="insert">
+        INSERT INTO address(
+        id, receiver_name, receiver_phone,
+        province, city, district, detail
+        )
+        VALUES (
+        #{id}, #{receiverName}, #{receiverPhone},
+        #{province}, #{city}, #{district}, #{detail}
+        )
+    </insert>
+
+    <select id="selectById" resultType="com.z.shop.user_service.domain.Address">
+        SELECT * FROM address WHERE id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE address
+        SET receiver_name = #{receiverName},
+        receiver_phone = #{receiverPhone},
+        province = #{province},
+        city = #{city},
+        district = #{district},
+        detail = #{detail}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM address WHERE id = #{id}
+    </delete>
+
+</mapper>
