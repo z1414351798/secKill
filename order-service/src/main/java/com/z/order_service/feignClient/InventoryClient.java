@@ -12,15 +12,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "inventory-service")
+@FeignClient(name = "inventory-service" )
 public interface InventoryClient {
 
-    @GetMapping("/inventory/all")
+    @GetMapping("/inventory-service/inventory/all")
     List<Inventory> findAll();
 
-    @GetMapping("/inventory/getDeductLog")
+    @GetMapping("/inventory-service/inventory/getDeductLog")
     InventoryDeductLog getDeductLog(@RequestParam Long orderId, @RequestParam String skuId);
 
-    @PostMapping("/inventory/addDeductLog")
+    @PostMapping("/inventory-service/inventory/addDeductLog")
     int addDeductLog(@RequestBody InventoryDeductLog inventoryDeductLog);
 }

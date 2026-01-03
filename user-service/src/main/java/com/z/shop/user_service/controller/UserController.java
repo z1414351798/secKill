@@ -1,5 +1,6 @@
 package com.z.shop.user_service.controller;
 
+import com.z.shop.common.Response;
 import com.z.shop.user_service.domain.User;
 import com.z.shop.user_service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,8 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/login")
-    public String login(@RequestParam String username,
-                        @RequestParam String password) {
+    public Response<String> login(@RequestParam String username,
+                          @RequestParam String password) {
         return userService.login(username, password);
     }
 

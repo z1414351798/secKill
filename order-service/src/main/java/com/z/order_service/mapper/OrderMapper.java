@@ -14,7 +14,7 @@ public interface OrderMapper {
                              @Param("status") String status);
     int updateStatusByOrderId(@Param("orderId") Long orderId,
                               @Param("status") String status);
-    int insertIgnore(Order order);
+    int insert(Order order);
 
     Order findById(@Param("orderId") Long orderId);
 

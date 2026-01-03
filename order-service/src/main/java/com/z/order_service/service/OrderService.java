@@ -66,8 +66,7 @@ public class OrderService {
             order.setSkuId(skuId);
             order.setQty(qty);
             order.setStatus("INIT");
-            Response<Order> orderId1 = insert(orderId, order);
-            if (orderId1 != null) return orderId1;
+            orderMapper.insert(order);
             log.info("订单创建成功，orderId:{}", orderId);
 
             // 5. 发送延时消息（放到最后，避免消息发送成功但其他操作失败）
@@ -101,15 +100,16 @@ public class OrderService {
         }
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    private Response<Order> insert(Long orderId, Order order) {
-        int inserted = orderMapper.insertIgnore(order);
-        if (inserted == 0) {
-            // 已经被其他线程/consumer处理过
-            return Response.error("Duplicated order orderId: " + orderId);
-        }
-        return null;
-    }
+//    @Transactional(rollbackFor = Exception.class)
+//    private Response<Order> insert(Long orderId, Order order) {
+//        int inserted = orderMapper.insertIgnore(order);
+//        if (inserted == 0) {
+//            // 已经被其他线程/consumer处理过
+//            redisStockService.rollback(orderId, order.getSkuId(), order.getQty());
+//            return Response.error("Duplicated order orderId: " + orderId);
+//        }
+//        return null;
+//    }
 
     public int updateStatusAndPayingAtWhenInit(Long orderId, String status, LocalDateTime payingAt) {
         return orderMapper.updateStatusAndPayingAtWhenInit(orderId,status,payingAt);

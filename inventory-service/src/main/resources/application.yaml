@@ -40,7 +40,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.z.shop_common.order, com.z.order_service.domain
+        spring.json.trusted.packages: com.z.shop.common
 
   datasource:
     url: jdbc:mysql://localhost:3306/shop?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai

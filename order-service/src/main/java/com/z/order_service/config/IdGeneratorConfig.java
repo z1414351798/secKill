@@ -9,8 +9,8 @@ public class IdGeneratorConfig {
 
     @Bean
     public FastSnowflakeIdGenerator snowflakeIdGenerator() {
-        long workerId = 1;      // 来自 env / k8s ordinal
-        long datacenterId = 1;
+        long workerId = Long.getLong("WORKER_ID");
+        long datacenterId = Long.getLong("DATACENTER_ID");
         return new FastSnowflakeIdGenerator(workerId, datacenterId);
     }
 }

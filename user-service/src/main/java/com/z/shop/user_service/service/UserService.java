@@ -1,6 +1,7 @@
 package com.z.shop.user_service.service;
 
 import com.z.shop.common.FastSnowflakeIdGenerator;
+import com.z.shop.common.Response;
 import com.z.shop.user_service.domain.User;
 import com.z.shop.user_service.mapper.UserMapper;
 import com.z.shop.user_service.util.JwtUtil;
@@ -14,11 +15,9 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
     @Autowired
-    private JwtUtil jwtUtil;
-    @Autowired
     private FastSnowflakeIdGenerator idGenerator;
 
-    public String login(String username, String password) {
+    public Response<String> login(String username, String password) {
         User user = userMapper.selectByUsername(username);
         if (user == null) {
             throw new RuntimeException("用户名或密码错误");
@@ -32,7 +31,8 @@ public class UserService {
             throw new RuntimeException("用户已禁用");
         }
 
-        return jwtUtil.generateToken(user.getId());
+        String token = JwtUtil.generateToken(user.getId());
+        return Response.success(token);
     }
 
 

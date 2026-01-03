@@ -1,5 +1,5 @@
 server:
-  port: 8001
+#  port: 8001
   servlet:
     context-path: /user-service
 
@@ -28,3 +28,6 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  private-key:

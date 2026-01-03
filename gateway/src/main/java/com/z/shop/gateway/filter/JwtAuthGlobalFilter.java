@@ -41,7 +41,8 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         try {
             // 3️⃣ 验签 + 解析
             Claims claims = jwtParser.parse(token);
-            Long userId = claims.get("userId", Long.class);
+            //获取userId
+            Long userId = Long.parseLong(claims.get("sub").toString());
 
             // 4️⃣ 注入 Header（关键）
             ServerHttpRequest newRequest = request.mutate()
