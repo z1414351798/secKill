@@ -5,7 +5,8 @@
 <mapper namespace="com.z.inventory_service.mapper.InventoryDeductLogMapper">
 
     <resultMap id="BaseMap" type="com.z.shop.common.InventoryDeductLog">
-        <id column="order_id" property="orderId"/>
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
         <result column="sku_id" property="skuId"/>
         <result column="qty" property="qty"/>
         <result column="status" property="status"/>
@@ -13,24 +14,44 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <!-- 插入 INIT -->
     <insert id="insertIgnore" parameterType="com.z.shop.common.InventoryDeductLog">
         INSERT IGNORE INTO inventory_deduct_log (
-        order_id, sku_id, qty, status, create_time, update_time
+        id, order_id, sku_id, qty, status, create_time, update_time
         ) VALUES (
-        #{orderId}, #{skuId}, #{qty}, #{status}, NOW(), NOW()
+        #{id}, #{orderId}, #{skuId}, #{qty}, 'DEDUCT_INIT', NOW(), NOW()
         )
     </insert>
 
+    <!-- 查询 -->
     <select id="selectByOrderIdAndSkuId" resultMap="BaseMap">
-        SELECT order_id, sku_id, qty,status, create_time, update_time
+        SELECT id, order_id, sku_id, qty, status, create_time, update_time
         FROM inventory_deduct_log
-        WHERE order_id = #{orderId} and sku_id = #{skuId}
+        WHERE order_id = #{orderId} AND sku_id = #{skuId}
     </select>
-    
-    <update id="updateStatus">
-        update inventory_deduct_log
-        set status = #{status}
-        where order_id = #{orderId} and sku_id = #{skuId} and status = 'LOCKED'
+
+    <!-- 更新为 PROCESSING -->
+    <update id="markProcessing">
+        UPDATE inventory_deduct_log
+        SET status = 'DEDUCT_PROCESSING', update_time = NOW()
+        WHERE order_id = #{orderId} AND sku_id = #{skuId}
+        AND status IN ('DEDUCT_INIT','DEDUCT_FAIL')
+    </update>
+
+    <!-- 扣库存成功 -->
+    <update id="markSuccess">
+        UPDATE inventory_deduct_log
+        SET status = 'DEDUCT_SUCCESS', update_time = NOW()
+        WHERE order_id = #{orderId} AND sku_id = #{skuId}
+        AND status = 'DEDUCT_PROCESSING'
+    </update>
+
+    <!-- 扣库存失败 -->
+    <update id="markFail">
+        UPDATE inventory_deduct_log
+        SET status = 'DEDUCT_FAIL', update_time = NOW()
+        WHERE order_id = #{orderId} AND sku_id = #{skuId}
+        AND status = 'DEDUCT_PROCESSING'
     </update>
 
 </mapper>

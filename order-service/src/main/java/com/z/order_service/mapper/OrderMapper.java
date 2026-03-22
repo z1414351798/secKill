@@ -27,4 +27,22 @@ public interface OrderMapper {
     List<Long> selectTimeoutOrders(@Param("limit") int limit);
 
     int markPaid(@Param("orderId") Long orderId);
+
+    boolean updatePaying(@Param("orderId") Long orderId);
+
+    boolean updatePayFAILED(@Param("orderId") Long orderId);
+
+    boolean updatePaySuccess(@Param("orderId") Long orderId);
+
+    boolean updateDeducting(@Param("orderId") Long orderId);
+
+    boolean updateDeductSuccess(@Param("orderId") Long orderId);
+
+    boolean updateDeductFail(@Param("orderId") Long orderId);
+
+    boolean updateRefunding(@Param("orderId") Long orderId);
+
+    boolean updateRefundSuccess(@Param("orderId") Long orderId);
+
+    boolean updateRefundFailed(@Param("orderId") Long orderId);
 }

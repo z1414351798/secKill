@@ -1,4 +1,4 @@
-package com.z.payment_service.config;
+package com.z.inventory_service.config;
 
 import com.z.shop.common.FastSnowflakeIdGenerator;
 import org.springframework.context.annotation.Bean;

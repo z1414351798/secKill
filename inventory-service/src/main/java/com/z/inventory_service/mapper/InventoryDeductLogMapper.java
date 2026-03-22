@@ -17,5 +17,9 @@ public interface InventoryDeductLogMapper {
      */
     InventoryDeductLog selectByOrderIdAndSkuId(@Param("orderId") Long orderId, @Param("skuId") String skuId);
 
-    int updateStatus(@Param("orderId") Long orderId, @Param("skuId") String skuId, @Param("status") String status);
+    boolean markProcessing(@Param("orderId") Long orderId, @Param("skuId") String skuId);
+
+    boolean markSuccess(@Param("orderId") Long orderId, @Param("skuId") String skuId);
+
+    boolean markFail(@Param("orderId") Long orderId, @Param("skuId") String skuId);
 }

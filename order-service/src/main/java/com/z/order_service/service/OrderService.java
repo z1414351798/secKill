@@ -4,7 +4,6 @@ package com.z.order_service.service;
 import com.z.order_service.enums.DeductResult;
 import com.z.order_service.feignClient.InventoryClient;
 import com.z.order_service.mapper.OrderMapper;
-import com.z.order_service.producer.OrderProducer;
 import com.z.order_service.producer.OrderTimeoutProducer;
 
 import com.z.shop.common.InventoryDeductLog;
@@ -30,8 +29,6 @@ public class OrderService {
     @Autowired
     private OrderMapper orderMapper;
     @Autowired
-    private OrderProducer producer;
-    @Autowired
     private RedisRateLimitService rateLimitService;
     @Autowired
     private OrderTimeoutProducer orderTimeoutProducer;
@@ -40,6 +37,7 @@ public class OrderService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Transactional
     public Response<Order> createOrder(Long orderId , Long userId, String skuId, int qty) {
         try {
             // 1. 秒杀限流
@@ -52,13 +50,13 @@ public class OrderService {
                 return Response.error("请勿重复下单");
             }
 
+
             // 2. Redis预扣库存
             DeductResult preDeductResult = redisStockService.preDeduct(orderId, skuId, qty);
             if (preDeductResult != DeductResult.SUCCESS) {
                 return Response.error(preDeductResult == DeductResult.NO_STOCK ?
                         "库存不足" : "重复下单");
             }
-
             // 3. 创建订单
             Order order = new Order();
             order.setOrderId(orderId);
@@ -68,6 +66,9 @@ public class OrderService {
             order.setStatus("INIT");
             orderMapper.insert(order);
             log.info("订单创建成功，orderId:{}", orderId);
+
+
+
 
             // 5. 发送延时消息（放到最后，避免消息发送成功但其他操作失败）
             try {

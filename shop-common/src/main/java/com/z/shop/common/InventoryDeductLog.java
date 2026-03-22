@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 
 public class InventoryDeductLog {
-
+    private Long Id;
     private Long orderId;
     private String skuId;
     private Integer qty;
@@ -61,15 +61,11 @@ public class InventoryDeductLog {
         this.updateTime = updateTime;
     }
 
-    public InventoryDeductLog(Long orderId, String skuId, Integer qty, String status, LocalDateTime createTime, LocalDateTime updateTime) {
-        this.orderId = orderId;
-        this.skuId = skuId;
-        this.qty = qty;
-        this.status = status;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
+    public Long getId() {
+        return Id;
     }
 
-    public InventoryDeductLog() {
+    public void setId(Long id) {
+        Id = id;
     }
 }

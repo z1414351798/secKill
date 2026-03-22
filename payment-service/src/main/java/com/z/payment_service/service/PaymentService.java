@@ -1,27 +1,25 @@
 package com.z.payment_service.service;
 
-import com.z.payment_service.domain.PaymentOrder;
+import com.z.payment_service.domain.Payment;
 import com.z.payment_service.feignClient.InventoryClient;
 import com.z.payment_service.feignClient.OrderClient;
-import com.z.payment_service.mapper.PaymentOrderMapper;
+import com.z.payment_service.mapper.PaymentMapper;
 import com.z.payment_service.producer.PaymentResultProducer;
 import com.z.shop.common.FastSnowflakeIdGenerator;
-import com.z.shop.common.InventoryDeductLog;
-import com.z.shop.common.Order;
 import com.z.shop.common.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class PaymentService {
 
     @Autowired
-    private PaymentOrderMapper paymentOrderMapper;
+    private PaymentMapper paymentMapper;
 
     @Autowired
     private PaymentResultProducer paymentResultProducer;
@@ -34,42 +32,58 @@ public class PaymentService {
 
 
     @Transactional
-    public Response<PaymentOrder> process(PaymentOrder paymentOrder) {
+    public Response<Payment> process(Payment payment) {
 
-        paymentOrder.setStatus("PROCESSING");
-        int inserted = paymentOrderMapper.insertIgnore(paymentOrder);
-        if (inserted == 0) {
-            // 已经被其他线程/consumer处理过
-            return Response.error("Can not insert payment order");
+        Long orderId = payment.getOrderId();
+
+        // 1️⃣ 幂等插入（只会成功一次）
+        long paymentId = fastSnowflakeIdGenerator.nextId();
+        payment.setPaymentId(paymentId);
+        paymentMapper.insertPayInit(payment);
+
+        // 2️⃣ 抢执行权（核心 CAS）
+        boolean updated = paymentMapper.markPayProcessing(orderId);
+
+        if (!updated) {
+            // 没抢到执行权 → 查状态
+            Payment exist = paymentMapper.selectByOrderId(orderId);
+
+            if ("PAY_SUCCESS".equals(exist.getStatus())) {
+                return Response.success(exist); // 幂等返回
+            }
+
+            if ("PAY_PROCESSING".equals(exist.getStatus())) {
+                return Response.error("Payment is processing");
+            }
+
+            // FAIL → 可以重试（理论不会走到这里，因为FAIL也能抢）
+            return Response.error("Retry later");
         }
 
-        // 2️⃣ 执行业务（模拟）
-        boolean success = doBusiness(paymentOrder);
+        // 3️⃣ 执行支付（⚠️ paymentId作为幂等key）
+        boolean success = doBusiness(paymentId);
 
-        // 3️⃣ 更新支付状态
-        int updatePstatus = paymentOrderMapper.updateStatus(
-                paymentOrder.getOrderId(),
-                success ? "SUCCESS" : "FAIL"
-        );
-        if (updatePstatus == 0){
-            return Response.error("Update payment status fail");
+        // 4️⃣ 更新状态
+        if (success) {
+            paymentMapper.markPaySuccess(orderId);
+        } else {
+            paymentMapper.markPayFail(orderId);
         }
 
-        // 4️⃣ 发结果事件
+        // 5️⃣ 发消息（最终结果）
         Map<String, Object> msg = new HashMap<>();
-        msg.put("orderId", paymentOrder.getOrderId());
-        msg.put("skuId", paymentOrder.getSkuId());
-        msg.put("qty", paymentOrder.getQty());
+        msg.put("orderId", orderId);
+        msg.put("paymentId", paymentId);
         msg.put("success", success);
-        paymentResultProducer.send(msg, paymentOrder.getOrderId().toString());
-        System.out.println("Payment success result: " + success + " orderId: " +paymentOrder.getOrderId() + " paymentOrderId: " + paymentOrder.getPaymentId());
-        return Response.success(paymentOrder);
+        paymentResultProducer.send(msg, orderId.toString());
 
+        return Response.success(payment);
     }
 
-    private boolean doBusiness(PaymentOrder paymentOrder) {
-        // 模拟支付 / 撮合 / 风控
-        return Math.random() > 0.5; // 50% 成功
+    private boolean doBusiness(long id) {
+        // 模拟支付 / 风控 / 撮合逻辑
+        return Math.random() > 0.5;
     }
+
 
 }

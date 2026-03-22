@@ -17,4 +17,10 @@ public interface OrderClient {
 
     @PostMapping("/order/markPaid")
     int markPaid(@RequestParam Long orderId);
+
+    @PostMapping("/order-service/order/updatePaying")
+    boolean updatePaying(@RequestParam Long orderId);
+
+    @PostMapping("/order-service/order/updateRefunding")
+    boolean updateRefunding(@RequestParam Long orderId);
 }

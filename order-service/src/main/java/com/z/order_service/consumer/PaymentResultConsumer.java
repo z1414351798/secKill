@@ -28,15 +28,14 @@ public class PaymentResultConsumer {
 
     @KafkaListener(topics = "payment-result-topic", groupId = "order-group", containerFactory = "kafkaListenerContainerFactory")
     public void consume(Map<String, Object> msg, Acknowledgment ack) {
-        Long orderId = Long.valueOf(msg.get("orderId").toString());
-        boolean success = Boolean.parseBoolean(msg.get("success").toString());
+        Long orderId = (Long)(msg.get("orderId"));
+        boolean success = (boolean)msg.get("success");
         String skuId = msg.get("skuId").toString();
-        int qty = Integer.parseInt(msg.get("qty").toString());
+        int qty = (int)msg.get("qty");
 
         if (success) {
-            int confirmOk = orderMapper.confirm(orderId);
-            if (confirmOk == 0 ){
-                System.out.println("Order confirm failed orderId : "+ orderId);
+            if (!orderMapper.updatePaySuccess(orderId)){
+                System.out.println("Order update PAY_SUCCESS failed, orderId : "+ orderId);
                 ack.acknowledge();
                 return;
             }
@@ -48,14 +47,13 @@ public class PaymentResultConsumer {
             inventoryDeductProducer.send(map,skuId);
             System.out.println("orderId: "+orderId+"confirm result: " + confirm);
         } else {
-            int confirmOk = orderMapper.rollback(orderId);
-            if (confirmOk == 0 ){
-                System.out.println("Order rollback failed orderId : "+ orderId);
+
+            if (!orderMapper.updatePayFAILED(orderId)){
+                System.out.println("Order update PAY_FAILED failed, orderId : "+ orderId);
                 ack.acknowledge();
                 return;
             }
-            DeductResult rollback = redisStockService.rollback(orderId, skuId, qty);
-            System.out.println("orderId: "+orderId+" rollback result: "+ rollback );
+            System.out.println("Order update PAY_FAILED success, orderId : "+ orderId);
         }
         ack.acknowledge();
     }

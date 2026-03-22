@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 public interface InventoryMapper {
-    int deduct(@Param("skuId") String skuId,
+    boolean deduct(@Param("skuId") String skuId,
                @Param("qty") int qty);
     int save(Inventory inventory);
     List<Inventory> findAll();

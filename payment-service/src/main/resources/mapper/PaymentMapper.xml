@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.z.payment_service.mapper.PaymentMapper">
+
+    <select id="selectByOrderIdAndPaymentId" resultType="Payment">
+        select * from payment where order_id = #{orderId} and payment_id = #{paymentId}
+    </select>
+
+    <select id="selectByOrderId" resultType="Payment">
+        select * from payment where order_id = #{orderId}
+    </select>
+
+    <!-- 插入 INIT -->
+    <insert id="insertPayInit" parameterType="com.z.payment_service.domain.Payment">
+        INSERT IGNORE INTO payment (
+        payment_id, order_id, sku_id, qty, status, create_time, update_time
+        ) VALUES (
+        #{paymentId}, #{orderId}, #{skuId}, #{qty}, 'PAY_INIT', NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 标记处理中的支付 -->
+    <update id="markPayProcessing">
+        UPDATE payment
+        SET status = 'PAY_PROCESSING', update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status IN ('PAY_INIT','PAY_FAIL')
+    </update>
+
+    <!-- 标记支付成功 -->
+    <update id="markPaySuccess">
+        UPDATE payment
+        SET status = 'PAY_SUCCESS', update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'PAY_PROCESSING'
+    </update>
+
+    <!-- 标记支付失败 -->
+    <update id="markPayFail">
+        UPDATE payment
+        SET status = 'PAY_FAIL', update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'PAY_PROCESSING'
+    </update>
+
+    <!-- 设置退款初始化 -->
+    <update id="markRefundInit">
+        UPDATE payment
+        SET status = 'REFUND_INIT', update_time = NOW()
+        WHERE order_id = #{orderId} AND payment_id = #{paymentId}
+        AND status IN ('PAY_SUCCESS','REFUND_FAIL')
+    </update>
+
+    <!-- 设置退款处理中 -->
+    <update id="markRefundProcessing">
+        UPDATE payment
+        SET status = 'REFUND_PROCESSING', update_time = NOW()
+        WHERE order_id = #{orderId} AND payment_id = #{paymentId}
+        AND status in ('PAY_SUCCESS', 'REFUND_FAIL')
+    </update>
+
+    <!-- 退款成功，只能从 REFUND_PROCESSING -->
+    <update id="markRefundSuccess">
+        UPDATE payment
+        SET status = 'REFUND_SUCCESS', update_time = NOW()
+        WHERE order_id = #{orderId} AND payment_id = #{paymentId}
+        AND status = 'REFUND_PROCESSING'
+    </update>
+
+    <!-- 退款失败，只能从 REFUND_PROCESSING -->
+    <update id="markRefundFail">
+        UPDATE payment
+        SET status = 'REFUND_FAIL', update_time = NOW()
+        WHERE order_id = #{orderId} AND payment_id = #{paymentId}
+        AND status = 'REFUND_PROCESSING'
+    </update>
+
+</mapper>

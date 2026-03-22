@@ -1,6 +1,7 @@
 package com.z.order_service.controller;
 
 
+import com.z.order_service.mapper.OrderMapper;
 import com.z.order_service.service.OrderService;
 
 import com.z.shop.common.FastSnowflakeIdGenerator;
@@ -18,6 +19,8 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private OrderMapper orderMapper;
     @Autowired
     private FastSnowflakeIdGenerator fastSnowflakeIdGenerator;
 
@@ -41,5 +44,20 @@ public class OrderController {
     @GetMapping("/findById")
     public Order findById(@RequestParam Long orderId){
         return orderService.findById(orderId);
+    }
+
+    @PostMapping("/updatePaying")
+    public boolean updatePaying(@RequestParam Long orderId){
+        return orderMapper.updatePaying(orderId);
+    }
+
+    @PostMapping("/updateDeducting")
+    public boolean updateDeducting(@RequestParam Long orderId){
+        return orderMapper.updateDeducting(orderId);
+    }
+
+    @PostMapping("/updateRefunding")
+    public boolean updateRefunding(@RequestParam Long orderId){
+        return orderMapper.updateRefunding(orderId);
     }
 }

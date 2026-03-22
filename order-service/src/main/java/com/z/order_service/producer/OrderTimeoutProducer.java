@@ -19,7 +19,7 @@ public class OrderTimeoutProducer {
                 "order-timeout-topic",
                 MessageBuilder.withPayload(order).build(),
                 3000,
-                9 //5mins
+                16 //5mins
         );
     }
 }

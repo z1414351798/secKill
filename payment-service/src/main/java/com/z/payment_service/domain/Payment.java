@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class PaymentOrder {
+public class Payment {
     private Long paymentId;
     private Long orderId;
     private String skuId;

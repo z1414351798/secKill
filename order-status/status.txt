@@ -1,0 +1,21 @@
+INIT（cache_pre_deduct）
+    ↓
+PAYING
+    ↓
+┌───────────────┬───────────────┐
+↓               ↓
+PAY_FAILED      PAY_SUCCESS
+↓               ↓
+（可重试）      DEDUCTING
+↓               ↓
+（超时）        ┌───────────────┬───────────────┐
+↓               ↓               ↓
+CANCEL      DEDUCT_SUCCESS   DEDUCT_FAIL
+（回滚Redis）     ↓               ↓
+                FINAL_SUCCESS   REFUNDING
+                                 ↓
+                        ┌───────────────┬───────────────┐
+                        ↓               ↓
+                   REFUND_SUCCESS       REFUND_FAILED
+                                        ↓
+                                     （重试）

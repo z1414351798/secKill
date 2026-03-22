@@ -1,0 +1,48 @@
+Kafka Topic: inventory-deduct-topic
+      │
+              ▼
+              [Consumer 接收消息]
+        │
+        ▼
+        [开始事务 @Transactional]
+        │
+        ▼
+        ┌───────────────────────────────┐
+        │ 1️⃣ Insert IGNORE INIT Log     │
+        │    - 唯一索引保证 order_id+sku_id 唯一
+│    - 两个线程同时插入只会成功一条
+└───────────────────────────────┘
+        │
+        ▼
+        ┌───────────────────────────────┐
+        │ 2️⃣ MarkProcessing (CAS)       │
+        │    UPDATE ... WHERE status IN  │
+        │    ('DEDUCT_INIT','DEDUCT_FAIL')│
+        │    - MySQL 行级锁保证只有一个  │
+        │      事务成功拿到执行权        │
+        │    - 返回更新行数 = 1 → 扣库存 │
+        │    - 返回更新行数 = 0 → 没抢到 │
+        └───────────────────────────────┘
+        │
+        ▼
+        [检查 markProcessing 结果]
+        ┌─────────────┬─────────────┐
+        │ 成功        │ 失败        │
+        ▼             ▼
+        [扣库存]      [SELECT log 状态]
+        │             │
+        ▼             ▼
+        [库存扣减成功？]   [DEDUCT_SUCCESS? → ack]
+        ┌─────┬───────┐   │
+        │ 成功 │ 失败 │   │
+        ▼     ▼       │
+        [markSuccess] [markFail]
+        │     │       │
+        ▼     ▼       │
+        [事务 commit]   │
+        │             │
+        ▼             │
+        [发消息到 inventory-deduct-result-topic]
+        │
+        ▼
+        [acknowledge Kafka offset]

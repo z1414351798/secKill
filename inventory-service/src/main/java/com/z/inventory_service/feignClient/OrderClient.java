@@ -15,5 +15,8 @@ public interface OrderClient {
     int markPaid(@RequestParam Long orderId);
 
     @GetMapping("/order/findById")
-    public Order findById(@RequestParam Long orderId);
+    Order findById(@RequestParam Long orderId);
+
+    @PostMapping("/order-service/order/updateDeducting")
+    boolean updateDeducting(@RequestParam Long orderId);
 }
