@@ -11,104 +11,125 @@
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
     </resultMap>
-    <update id="updateStatusAndPayingAtWhenInit">
-        update orders set status = #{status}, paying_at = #{payingAt}, update_time = now() where order_id = #{orderId} and status  = 'INIT'
+    <update id="markDeducting">
+        update orders
+        set status = 'DEDUCTING'
+        where status = 'INIT'
+        and order_id = #{orderId}
     </update>
-    <update id="updatePaying">
-        update orders set status = 'PAYING' where status in ('INIT', 'PAY_FAILED') and order_id = #{orderId}
+
+    <update id="markDeductSuccess">
+        update orders
+        set status = 'DEDUCT_SUCCESS'
+        where status in 'DEDUCTING'
+        and order_id = #{orderId}
     </update>
-    <update id="updateDeducting">
-        update orders set status = 'DEDUCTING' where status = 'PAY_SUCCESS' and order_id = #{orderId}
+
+    <update id="markeDeductFail">
+        update orders
+        set status = 'DEDUCT_FAIL'
+        where status = 'DEDUCTING'
+        and order_id = #{orderId}
     </update>
-    <update id="updateDeductSuccess">
-        update orders set status = 'DEDUCT_SUCCESS' where status in ('PAY_SUCCESS','DEDUCT_FAIL') and order_id = #{orderId}
+
+    <update id="markCanPay">
+        update orders
+        set status = 'CAN_PAY'
+        where status = 'DEDUCT_SUCCESS'
+        and order_id = #{orderId}
     </update>
-    <update id="updateDeductFail">
-        update orders set status = 'DEDUCT_FAIL' where status = 'PAY_SUCCESS' and order_id = #{orderId}
+
+    <update id="markPayInit">
+        update orders set status = 'PAY_INIT' where status in ('CAN_PAY', 'PAY_FAIL') and order_id = #{orderId}
     </update>
-    <update id="updateRefunding">
-        update orders set status = 'REFUNDING' where status = 'DEDUCT_FAIL' and order_id = #{orderId}
+
+    <update id="markPayProcessing">
+        update orders set status = 'PAY_PROCESSING' where status = 'PAY_INIT' and order_id = #{orderId}
     </update>
-    <update id="updateRefundSuccess">
-        update orders set status = 'REFUND_SUCCESS' where status in ('DEDUCT_FAIL', 'REFUND_FAILED')and order_id = #{orderId}
+
+    <update id="markPaySuccess">
+        UPDATE orders
+        SET status = 'PAY_SUCCESS',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'PAY_PROCESSING'
     </update>
-    <update id="updateRefundFailed">
-        update orders set status = 'REFUND_FAILED' where status = 'DEDUCT_FAIL' and order_id = #{orderId}
+
+    <update id="markPayFAIL">
+        UPDATE orders
+        SET status = 'PAY_FAIL',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'PAY_PROCESSING'
     </update>
-    <update id="updateStatusWhenPaying">
-        update orders set status = #{status}, update_time = now()  where order_id = #{orderId} and status  = 'PAYING'
+
+    <update id="markFinalSuccess">
+        UPDATE orders
+        SET status = 'FINAL_SUCCESS',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'PAY_SUCCESS'
     </update>
-    <update id="updateStatusByOrderId">
-        update orders set status = #{status}, update_time = now()  where order_id = #{orderId}
-    </update>
+
     <insert id="insert" parameterType="com.z.shop.common.Order">
         insert into orders(
         order_id, user_id, sku_id, qty, status, create_time, update_time)
         values(
         #{orderId}, #{userId}, #{skuId}, #{qty}, #{status}, now(), now())
     </insert>
+
     <select id="findById" resultMap="OrderMap">
         select
         order_id, user_id, sku_id, qty, status, create_time, update_time
         from orders where order_id = #{orderId}
     </select>
+
     <update id="timeoutCancel">
         UPDATE orders
-        SET status = 'CANCEL',
-        update_time = NOW()
-        WHERE order_id = #{orderId} and status in ('INIT', 'PAY_FAILED')
-    </update>
-
-    <update id="confirm">
-        UPDATE orders
-        SET status = 'CONFIRM',
-        update_time = NOW()
-        WHERE order_id = #{orderId} and status = 'INIT'
-    </update>
-
-    <update id="updatePayFAILED">
-        UPDATE orders
-        SET status = 'PAY_FAILED',
-        update_time = NOW()
-        WHERE order_id = #{orderId} and status = 'INIT'
-    </update>
-
-    <update id="updatePaySuccess">
-        UPDATE orders
-        SET status = 'PAY_SUCCESS',
-        update_time = NOW()
-        WHERE order_id = #{orderId} and status in ('INIT','PAY_FAILED')
-    </update>
-
-    <update id="rollback">
-        UPDATE orders
-        SET status = 'ROLLBACK',
-        update_time = NOW()
-        WHERE order_id = #{orderId} and status = 'INIT'
-    </update>
-
-    <select id="selectTimeoutOrders" resultType="long">
-        SELECT order_id
-        FROM orders
-        WHERE status IN ('INIT','PAYING')
-        AND (
-        (status = 'INIT'
-        AND create_time <![CDATA[ < ]]> NOW() - INTERVAL 5 MINUTE)
-        OR (status = 'PAYING'
-        AND paying_at <![CDATA[ < ]]> NOW() - INTERVAL 5 MINUTE)
-        )
-        ORDER BY create_time
-        LIMIT #{limit}
-    </select>
-
-    <update id="markPaid">
-        UPDATE orders
-        SET status = 'PAID',
+        SET status = 'TIME_OUT_CANCEL',
         update_time = NOW()
         WHERE order_id = #{orderId}
-        AND status = 'PAYING'
+        AND status IN (
+        'INIT',
+        'DEDUCTING',
+        'DEDUCT_SUCCESS',
+        'CAN_PAY',
+        'PAY_INIT',
+        'PAY_PROCESSING',
+        'PAY_FAIL'
+        )
     </update>
 
+    <update id="markRollbackInit">
+        UPDATE orders
+        SET status = 'ROLLBACK_INIT',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'TIME_OUT_CANCEL'
+    </update>
 
+    <update id="markRollbackProcessing">
+        UPDATE orders
+        SET status = 'ROLLBACK_PROCESSING',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'ROLLBACK_INIT'
+    </update>
+
+    <update id="markRollbackSuccess">
+        UPDATE orders
+        SET status = 'ROLLBACK_SUCCESS',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'ROLLBACK_PROCESSING'
+    </update>
+
+    <update id="markRollbackFail">
+        UPDATE orders
+        SET status = 'ROLLBACK_FAIL',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status = 'ROLLBACK_PROCESSING'
+    </update>
 
 </mapper>

@@ -1,6 +1,6 @@
 package com.z.payment_service.consumer;
 
-import com.z.payment_service.domain.Payment;
+import com.z.shop.common.Payment;
 import com.z.payment_service.feignClient.OrderClient;
 import com.z.payment_service.mapper.PaymentMapper;
 import com.z.payment_service.producer.RefundResultProducer;

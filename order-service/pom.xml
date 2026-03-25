@@ -46,6 +46,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.z</groupId>
+			<artifactId>outbox-spring-boot-starter</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.z</groupId>
 			<artifactId>shop-common</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>

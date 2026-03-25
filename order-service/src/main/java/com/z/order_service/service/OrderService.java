@@ -3,21 +3,24 @@ package com.z.order_service.service;
 
 import com.z.order_service.enums.DeductResult;
 import com.z.order_service.feignClient.InventoryClient;
+import com.z.order_service.feignClient.PaymentClient;
 import com.z.order_service.mapper.OrderMapper;
 import com.z.order_service.producer.OrderTimeoutProducer;
 
-import com.z.shop.common.InventoryDeductLog;
+import com.z.outbox.service.OutboxService;
 import com.z.shop.common.Order;
+import com.z.shop.common.Payment;
 import com.z.shop.common.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.web.exchanges.HttpExchange;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 
-import java.net.http.HttpResponse;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -36,9 +39,14 @@ public class OrderService {
     private InventoryClient inventoryClient;
     @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private PaymentClient paymentClient;
+
+    @Autowired
+    private OutboxService outboxService;
 
     @Transactional
-    public Response<Order> createOrder(Long orderId , Long userId, String skuId, int qty) {
+    public Response<Order> createOrder(Long orderId , Long userId, String skuId, int qty, BigDecimal amount) {
         try {
             // 1. 秒杀限流
 //            boolean pass = rateLimitService.tryAcquire("seckill:{" + skuId + "}", 1000, 500);
@@ -64,11 +72,19 @@ public class OrderService {
             order.setSkuId(skuId);
             order.setQty(qty);
             order.setStatus("INIT");
+            order.setAmount(amount);
             orderMapper.insert(order);
             log.info("订单创建成功，orderId:{}", orderId);
 
+            outboxService.saveEvent(
+                    String.valueOf(orderId),
+                    "inventory-deduct-topic",
+                    Map.of("orderId", orderId, "skuId", skuId, "qty", qty)
+            );
 
+            boolean markDeducting = orderMapper.markDeducting(orderId);
 
+            if (!markDeducting) return Response.error("Mark deducting fail orderId: " + orderId);
 
             // 5. 发送延时消息（放到最后，避免消息发送成功但其他操作失败）
             try {
@@ -112,15 +128,35 @@ public class OrderService {
 //        return null;
 //    }
 
-    public int updateStatusAndPayingAtWhenInit(Long orderId, String status, LocalDateTime payingAt) {
-        return orderMapper.updateStatusAndPayingAtWhenInit(orderId,status,payingAt);
-    }
 
-    public int markPaid(Long orderId){
-        return orderMapper.markPaid(orderId);
-    }
 
     public Order findById(Long orderId){
         return orderMapper.findById(orderId);
+    }
+
+    public Response<String> payOrder(Long orderId) {
+
+        boolean markPayInit = orderMapper.markPayInit(orderId);
+        if (!markPayInit) {
+            return Response.error("Can not mark pay init");
+        }
+
+        Order order = orderMapper.findById(orderId);
+
+        // 3️⃣ 调用支付服务（不是直接支付！）
+        Payment payment = new Payment();
+        payment.setQty(order.getQty());
+        payment.setAmount(order.getAmount());
+        payment.setSkuId(order.getSkuId());
+        payment.setOrderId(orderId);
+
+        Response<String> payUrl = paymentClient.createPayment(payment);
+        if (payUrl.getCode() == 200) {
+            if (orderMapper.markPayProcessing(orderId)) {
+                return Response.success(payUrl.getData());
+            }
+        }
+
+        return Response.error("Create payment error");
     }
 }

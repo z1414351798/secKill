@@ -63,3 +63,7 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+outbox:
+  batch-size: 100
+  scan-interval: 1000

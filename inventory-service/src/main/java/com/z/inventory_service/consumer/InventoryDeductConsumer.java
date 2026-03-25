@@ -1,20 +1,16 @@
 package com.z.inventory_service.consumer;
 
-import com.z.inventory_service.feignClient.OrderClient;
-import com.z.inventory_service.mapper.InventoryDeductLogMapper;
 import com.z.inventory_service.mapper.InventoryMapper;
+import com.z.inventory_service.mapper.InventoryStockLogMapper;
 import com.z.inventory_service.producer.InventoryDeductResultProducer;
+import com.z.outbox.service.OutboxService;
 import com.z.shop.common.FastSnowflakeIdGenerator;
-import com.z.shop.common.InventoryDeductLog;
-import com.z.shop.common.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -22,71 +18,80 @@ public class InventoryDeductConsumer {
 
     @Autowired
     private InventoryMapper inventoryMapper;
+
     @Autowired
-    private InventoryDeductLogMapper inventoryDeductLogMapper;
-    @Autowired
-    private KafkaTemplate<String, Order> kafkaTemplate;
-    @Autowired
-    private OrderClient orderClient;
+    private InventoryStockLogMapper inventoryStockLogMapper;
+
     @Autowired
     private InventoryDeductResultProducer inventoryDeductResultProducer;
+
+    @Autowired
+    private OutboxService outboxService;
+
     @Autowired
     private FastSnowflakeIdGenerator fastSnowflakeIdGenerator;
 
+    private static final int MAX_RETRY = 5;
 
     @Transactional
-    @KafkaListener(
-            topics = "inventory-deduct-topic",
+    @KafkaListener(topics = "inventory-deduct-topic",
             groupId = "inventory-group",
-            containerFactory = "kafkaListenerContainerFactory"
-    )
-    public void inventoryDeduct(Map<String, Object> msg, Acknowledgment ack) {
+            containerFactory = "kafkaListenerContainerFactory")
+    public void deductStock(Map<String, Object> msg, Acknowledgment ack) {
 
         String skuId = (String) msg.get("skuId");
         int qty = (int) msg.get("qty");
         Long orderId = (Long) msg.get("orderId");
 
-        // 1️⃣ 直接 insert（幂等）
-        InventoryDeductLog newLog = new InventoryDeductLog();
-        newLog.setId(fastSnowflakeIdGenerator.nextId());
-        newLog.setOrderId(orderId);
-        newLog.setSkuId(skuId);
-        newLog.setQty(qty);
-        newLog.setStatus("DEDUCT_INIT");
-        inventoryDeductLogMapper.insertIgnore(newLog);
+        // 1️⃣ 幂等插入
+        inventoryStockLogMapper.insertIgnore(
+                fastSnowflakeIdGenerator.nextId(),
+                orderId, skuId, qty
+        );
 
-        // 2️⃣ 抢执行权（核心！！！）
-        boolean updated = inventoryDeductLogMapper.markProcessing(orderId, skuId);
+        // 2️⃣ 抢执行权（INIT / FAIL -> PROCESSING）
+        int updated = inventoryStockLogMapper.markDeductProcessing(orderId, skuId);
 
-        if (!updated) {
-            InventoryDeductLog log = inventoryDeductLogMapper.selectByOrderIdAndSkuId(orderId, skuId);
-            if ("DEDUCT_SUCCESS".equals(log.getStatus())) {
-                ack.acknowledge();
-                return;
+        if (updated == 0) {
+            ack.acknowledge();
+            return; // 已被处理 or 正在处理
+        }
+
+        boolean success = false;
+
+        try {
+            // 3️⃣ 扣库存（原子）
+            success = inventoryMapper.deduct(skuId, qty);
+
+            if (success) {
+                inventoryStockLogMapper.markDeductSuccess(orderId, skuId);
+                outboxService.saveEvent(
+                        String.valueOf(orderId),
+                        "inventory-deduct-result-topic",
+                        Map.of("orderId", orderId, "success", success)
+                );
+
+            } else {
+                inventoryStockLogMapper.markDeductFail(orderId, skuId);
+
+                int retry = inventoryStockLogMapper.incrementDeductRetry(orderId, skuId, MAX_RETRY);
+
+                if (retry == 0) {
+                    inventoryStockLogMapper.markDeductFailMaxRetry(orderId, skuId, MAX_RETRY);
+
+                    outboxService.saveEvent(
+                            String.valueOf(orderId),
+                            "inventory-deduct-dead-letter-topic",
+                            msg
+                    );
+                }
             }
-            throw new RuntimeException("retry"); // Kafka 重试
+
+        } catch (Exception e) {
+            inventoryStockLogMapper.markUnknownError(orderId, skuId);
+            throw e;
         }
-
-        // 3️⃣ 扣库存
-        boolean success = inventoryMapper.deduct(skuId, qty);
-
-        // 4️⃣ 更新状态
-        if (success) {
-            inventoryDeductLogMapper.markSuccess(orderId, skuId);
-        } else {
-            inventoryDeductLogMapper.markFail(orderId, skuId);
-        }
-
-        // 5️⃣ 发消息
-        Map<String, Object> deductResultMsg = new HashMap<>();
-        deductResultMsg.put("success", success);
-        deductResultMsg.put("orderId", orderId);
-        deductResultMsg.put("skuId", skuId);
-        deductResultMsg.put("qty", qty);
-        inventoryDeductResultProducer.send(deductResultMsg, orderId.toString());
-
-        // 6️⃣ ack
+        
         ack.acknowledge();
     }
-
 }

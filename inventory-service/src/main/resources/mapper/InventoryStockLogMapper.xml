@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.z.inventory_service.mapper.InventoryStockLogMapper">
+
+    <resultMap id="BaseMap" type="com.z.shop.common.InventoryStockLog">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="sku_id" property="skuId"/>
+        <result column="qty" property="qty"/>
+        <result column="status" property="status"/>
+        <result column="deduct_retry_count" property="deductRetryCount"/>
+        <result column="rollback_retry_count" property="rollbackRetryCount"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 插入 INIT -->
+    <insert id="insertIgnore">
+        INSERT IGNORE INTO inventory_stock_log (
+        id, order_id, sku_id, qty, status,
+        deduct_retry_count, rollback_retry_count,
+        create_time, update_time
+        ) VALUES (
+        #{id}, #{orderId}, #{skuId}, #{qty},
+        'DEDUCT_INIT',
+        0, 0,
+        NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 查询 -->
+    <select id="selectByOrderIdAndSkuId" resultMap="BaseMap">
+        SELECT id, order_id, sku_id, qty, status,
+        deduct_retry_count, rollback_retry_count,
+        create_time, update_time
+        FROM inventory_stock_log
+        WHERE order_id = #{orderId} AND sku_id = #{skuId}
+    </select>
+
+    <update id="markDeductSuccess">
+        UPDATE inventory_stock_log
+        SET status='DEDUCT_SUCCESS', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status='DEDUCT_PROCESSING'
+    </update>
+
+    <update id="markDeductProcessing">
+        UPDATE inventory_stock_log
+        SET status='DEDUCT_PROCESSING', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status IN ('DEDUCT_INIT','DEDUCT_FAIL')
+    </update>
+
+    <update id="markRollbackInit">
+        UPDATE inventory_stock_log
+        SET status='ROLLBACK_INIT', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status='DEDUCT_SUCCESS'
+    </update>
+
+    <update id="markRollbackSuccess">
+        UPDATE inventory_stock_log
+        SET status='ROLLBACK_SUCCESS', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status='ROLLBACK_PROCESSING'
+    </update>
+
+    <update id="markRollbackProcessing">
+        UPDATE inventory_stock_log
+        SET status='ROLLBACK_PROCESSING', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status IN ('ROLLBACK_INIT','ROLLBACK_FAIL')
+    </update>
+
+    <update id="markDeductFail">
+        UPDATE inventory_stock_log
+        SET status='DEDUCT_FAIL', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status='DEDUCT_PROCESSING'
+    </update>
+
+    <update id="markRollbackFail">
+        UPDATE inventory_stock_log
+        SET status='ROLLBACK_FAIL', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status='ROLLBACK_PROCESSING'
+    </update>
+
+    <update id="incrementDeductRetry">
+        UPDATE inventory_stock_log
+        SET deduct_retry_count=deduct_retry_count+1, update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status = 'DEDUCT_FAIL' AND deduct_retry_count <![CDATA[ < ]]> #{deductMaxCount}
+    </update>
+
+    <update id="markDeductFailMaxRetry">
+        UPDATE inventory_stock_log
+        SET status='DEDUCT_FAIL_MAX_RETRY', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status = 'DEDUCT_FAIL' AND deduct_retry_count <![CDATA[ >= ]]> #{deductMaxCount}
+    </update>
+
+    <update id="incrementRollbackRetry">
+        UPDATE inventory_stock_log
+        SET rollback_retry_count=rollback_retry_count+1, update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status = 'ROLLBACK_FAIL' AND rollback_retry_count <![CDATA[ < ]]> #{rollbackMaxCount}
+    </update>
+
+    <update id="markRollbackFailMaxRetry">
+        UPDATE inventory_stock_log
+        SET status='ROLLBACK_FAIL_MAX_RETRY', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId} AND status = 'ROLLBACK_FAIL' AND rollback_retry_count <![CDATA[ >= ]]> #{rollbackMaxCount}
+    </update>
+
+    <update id="markUnknownError">
+        UPDATE inventory_stock_log
+        SET status='UNKNOWN_ERROR', update_time=NOW()
+        WHERE order_id=#{orderId} AND sku_id=#{skuId}
+    </update>
+
+</mapper>

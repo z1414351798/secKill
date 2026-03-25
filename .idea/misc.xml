@@ -10,6 +10,8 @@
         <option value="$PROJECT_DIR$/shop-common/pom.xml" />
         <option value="$PROJECT_DIR$/gateway/pom.xml" />
         <option value="$PROJECT_DIR$/user-service/pom.xml" />
+        <option value="$PROJECT_DIR$/outbox-spring-boot-starter/pom.xml" />
+        <option value="$PROJECT_DIR$/zPay/pom.xml" />
       </list>
     </option>
   </component>

@@ -1,6 +1,6 @@
 package com.z.payment_service.mapper;
 
-import com.z.payment_service.domain.Payment;
+import com.z.shop.common.Payment;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

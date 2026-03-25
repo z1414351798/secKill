@@ -7,42 +7,35 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderMapper {
-    int updateStatusAndPayingAtWhenInit(@Param("orderId") Long orderId,
-                                        @Param("status") String status,
-                                        @Param("payingAt")LocalDateTime payingAt);
-    int updateStatusWhenPaying(@Param("orderId") Long orderId,
-                             @Param("status") String status);
-    int updateStatusByOrderId(@Param("orderId") Long orderId,
-                              @Param("status") String status);
     int insert(Order order);
 
     Order findById(@Param("orderId") Long orderId);
 
     int timeoutCancel(@Param("orderId") Long orderId);
 
-    int confirm(@Param("orderId") Long orderId);
+    boolean markPayProcessing(@Param("orderId") Long orderId);
 
-    int rollback(@Param("orderId") Long orderId);
+    boolean markPaySuccess(@Param("orderId") Long orderId);
 
-    List<Long> selectTimeoutOrders(@Param("limit") int limit);
+    boolean markPayFAIL(@Param("orderId") Long orderId);
 
-    int markPaid(@Param("orderId") Long orderId);
+    boolean markCanPay(@Param("orderId") Long orderId);
 
-    boolean updatePaying(@Param("orderId") Long orderId);
+    boolean markDeducting(@Param("orderId") Long orderId);
 
-    boolean updatePayFAILED(@Param("orderId") Long orderId);
+    boolean markDeductSuccess(@Param("orderId") Long orderId);
 
-    boolean updatePaySuccess(@Param("orderId") Long orderId);
+    boolean markDeductFail(@Param("orderId") Long orderId);
 
-    boolean updateDeducting(@Param("orderId") Long orderId);
+    boolean markPayInit(@Param("orderId") Long orderId);
 
-    boolean updateDeductSuccess(@Param("orderId") Long orderId);
+    boolean markFinalSuccess(@Param("orderId") Long orderId);
 
-    boolean updateDeductFail(@Param("orderId") Long orderId);
+    boolean markRollbackInit(@Param("orderId") Long orderId);
 
-    boolean updateRefunding(@Param("orderId") Long orderId);
+    boolean markRollbackProcessing(@Param("orderId") Long orderId);
 
-    boolean updateRefundSuccess(@Param("orderId") Long orderId);
+    boolean markRollbackFail(@Param("orderId") Long orderId);
 
-    boolean updateRefundFailed(@Param("orderId") Long orderId);
+    boolean markRollbackSuccess(@Param("orderId") Long orderId);
 }

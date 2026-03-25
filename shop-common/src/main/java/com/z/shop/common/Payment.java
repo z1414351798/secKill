@@ -1,17 +1,26 @@
 package com.z.shop.common;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-
-public class InventoryDeductLog {
-    private Long Id;
+public class Payment {
+    private Long paymentId;
     private Long orderId;
     private String skuId;
     private Integer qty;
     private String status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private BigDecimal amount;
+
+    public Long getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(Long paymentId) {
+        this.paymentId = paymentId;
+    }
 
     public Long getOrderId() {
         return orderId;
@@ -61,11 +70,11 @@ public class InventoryDeductLog {
         this.updateTime = updateTime;
     }
 
-    public Long getId() {
-        return Id;
+    public BigDecimal getAmount() {
+        return amount;
     }
 
-    public void setId(Long id) {
-        Id = id;
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
 }

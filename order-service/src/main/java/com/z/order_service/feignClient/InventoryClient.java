@@ -1,10 +1,8 @@
 package com.z.order_service.feignClient;
 
 import com.z.shop.common.Inventory;
-import com.z.shop.common.InventoryDeductLog;
-import com.z.shop.common.Order;
+import com.z.shop.common.InventoryStockLog;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,8 +17,8 @@ public interface InventoryClient {
     List<Inventory> findAll();
 
     @GetMapping("/inventory-service/inventory/getDeductLog")
-    InventoryDeductLog getDeductLog(@RequestParam Long orderId, @RequestParam String skuId);
+    InventoryStockLog getDeductLog(@RequestParam Long orderId, @RequestParam String skuId);
 
     @PostMapping("/inventory-service/inventory/addDeductLog")
-    int addDeductLog(@RequestBody InventoryDeductLog inventoryDeductLog);
+    int addDeductLog(@RequestBody InventoryStockLog inventoryStockLog);
 }

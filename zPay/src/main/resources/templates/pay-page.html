@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Mock Pay</title>
+</head>
+<body>
+
+<h2>Mock Payment Page</h2>
+
+<p>Order ID: <span th:text="${orderId}"></span></p>
+
+<button th:onclick="'location.href=\'/mock/success?orderId=' + ${orderId} + '\''">
+    Pay Success
+</button>
+
+<button th:onclick="'location.href=\'/mock/fail?orderId=' + ${orderId} + '\''">
+    Pay Fail
+</button>
+
+</body>
+</html>

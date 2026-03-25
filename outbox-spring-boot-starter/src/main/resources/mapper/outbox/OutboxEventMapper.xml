@@ -1,0 +1,52 @@
+<mapper namespace="com.z.outbox.mapper.OutboxEventMapper">
+
+    <insert id="insert">
+        INSERT INTO outbox_event
+        (biz_id, topic, payload, status, retry_count, max_retry, create_time, update_time)
+        VALUES
+        (#{bizId}, #{topic}, #{payload}, #{status}, #{retryCount}, #{maxRetry}, NOW(), NOW())
+    </insert>
+
+    <select id="selectReadyEvents" resultType="com.z.outbox.domain.OutboxEvent">
+        SELECT *
+        FROM outbox_event
+        WHERE status = 'INIT'
+        <if test="topics!= null and topics.size() >0">
+            topic IN
+            <foreach collection="topics" item="topic" separator="," open="(" close=")">
+                #{topic}
+            </foreach>
+        </if>
+        AND (next_retry_time IS NULL OR next_retry_time <![CDATA[ <= ]]> NOW())
+        LIMIT #{limit}
+    </select>
+
+    <update id="markSending">
+        UPDATE outbox_event
+        SET status = 'SENDING'
+        WHERE id = #{id} AND status = 'INIT'
+    </update>
+
+    <update id="markSent">
+        UPDATE outbox_event
+        SET status = 'SENT'
+        WHERE id = #{id} AND status = 'SENDING'
+    </update>
+
+    <update id="retryWithBackoff">
+        UPDATE outbox_event
+        SET
+        status = 'INIT',
+        retry_count = retry_count + 1,
+        next_retry_time = #{nextRetryTime}
+        WHERE id = #{id}
+        AND status = 'SENDING'
+    </update>
+
+    <update id="markFail">
+        UPDATE outbox_event
+        SET status = 'FAIL'
+        WHERE id = #{id}
+    </update>
+
+</mapper>

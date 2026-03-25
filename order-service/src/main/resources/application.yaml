@@ -70,4 +70,9 @@ rocketmq:
     send-message-timeout: 3000
     retry-times-when-send-failed: 2
 
+outbox:
+  batch-size: 100
+  scan-interval: 1000
+  topics: inventory-deduct-topic
+
 

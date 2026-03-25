@@ -3,22 +3,17 @@ package com.z.shop.common;
 
 import java.time.LocalDateTime;
 
-public class PaymentOrder {
-    private Long paymentId;
+
+public class InventoryStockLog {
+    private Long Id;
     private Long orderId;
     private String skuId;
     private Integer qty;
     private String status;
+    private Integer deductRetryCount;
+    private Integer RollbackRetryCount;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
-    public Long getPaymentId() {
-        return paymentId;
-    }
-
-    public void setPaymentId(Long paymentId) {
-        this.paymentId = paymentId;
-    }
 
     public Long getOrderId() {
         return orderId;
@@ -68,16 +63,27 @@ public class PaymentOrder {
         this.updateTime = updateTime;
     }
 
-    public PaymentOrder() {
+    public Long getId() {
+        return Id;
     }
 
-    public PaymentOrder(Long paymentId, Long orderId, String skuId, Integer qty, String status, LocalDateTime createTime, LocalDateTime updateTime) {
-        this.paymentId = paymentId;
-        this.orderId = orderId;
-        this.skuId = skuId;
-        this.qty = qty;
-        this.status = status;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
+    public void setId(Long id) {
+        Id = id;
+    }
+
+    public Integer getDeductRetryCount() {
+        return deductRetryCount;
+    }
+
+    public void setDeductRetryCount(Integer deductRetryCount) {
+        this.deductRetryCount = deductRetryCount;
+    }
+
+    public Integer getRollbackRetryCount() {
+        return RollbackRetryCount;
+    }
+
+    public void setRollbackRetryCount(Integer rollbackRetryCount) {
+        RollbackRetryCount = rollbackRetryCount;
     }
 }

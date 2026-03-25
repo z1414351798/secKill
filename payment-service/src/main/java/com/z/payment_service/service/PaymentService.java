@@ -1,11 +1,13 @@
 package com.z.payment_service.service;
 
-import com.z.payment_service.domain.Payment;
+import com.z.outbox.service.OutboxService;
+import com.z.shop.common.Payment;
 import com.z.payment_service.feignClient.InventoryClient;
 import com.z.payment_service.feignClient.OrderClient;
 import com.z.payment_service.mapper.PaymentMapper;
 import com.z.payment_service.producer.PaymentResultProducer;
 import com.z.shop.common.FastSnowflakeIdGenerator;
+import com.z.shop.common.PaymentDto;
 import com.z.shop.common.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,61 +31,34 @@ public class PaymentService {
     private InventoryClient inventoryClient;
     @Autowired
     private FastSnowflakeIdGenerator fastSnowflakeIdGenerator;
+    @Autowired
+    private OutboxService outboxService;
 
 
     @Transactional
-    public Response<Payment> process(Payment payment) {
-
-        Long orderId = payment.getOrderId();
-
-        // 1️⃣ 幂等插入（只会成功一次）
-        long paymentId = fastSnowflakeIdGenerator.nextId();
-        payment.setPaymentId(paymentId);
-        paymentMapper.insertPayInit(payment);
-
-        // 2️⃣ 抢执行权（核心 CAS）
-        boolean updated = paymentMapper.markPayProcessing(orderId);
-
-        if (!updated) {
-            // 没抢到执行权 → 查状态
-            Payment exist = paymentMapper.selectByOrderId(orderId);
-
-            if ("PAY_SUCCESS".equals(exist.getStatus())) {
-                return Response.success(exist); // 幂等返回
-            }
-
-            if ("PAY_PROCESSING".equals(exist.getStatus())) {
-                return Response.error("Payment is processing");
-            }
-
-            // FAIL → 可以重试（理论不会走到这里，因为FAIL也能抢）
-            return Response.error("Retry later");
-        }
-
-        // 3️⃣ 执行支付（⚠️ paymentId作为幂等key）
-        boolean success = doBusiness(paymentId);
-
-        // 4️⃣ 更新状态
+    public void process(PaymentDto dto) {
+        Long orderId = dto.getOrderId();
+        Payment payment = paymentMapper.selectByOrderId(orderId);
+        boolean success = dto.getStatus().equals("SUCCESS");
         if (success) {
-            paymentMapper.markPaySuccess(orderId);
+            boolean markPaySuccess = paymentMapper.markPaySuccess(orderId);
+            if (!markPaySuccess) {
+                System.out.println("payment can not mark pay_success orderId: " + orderId);
+            }
         } else {
-            paymentMapper.markPayFail(orderId);
+            boolean markPayFail = paymentMapper.markPayFail(orderId);
+            if (!markPayFail) {
+                System.out.println("payment can not mark pay_fail orderId: " + orderId);
+            }
         }
 
-        // 5️⃣ 发消息（最终结果）
-        Map<String, Object> msg = new HashMap<>();
-        msg.put("orderId", orderId);
-        msg.put("paymentId", paymentId);
-        msg.put("success", success);
-        paymentResultProducer.send(msg, orderId.toString());
-
-        return Response.success(payment);
+        outboxService.saveEvent(
+                String.valueOf(orderId),
+                "payment_result_topic",
+                Map.of("orderId", orderId, "success", success, "skuId", payment.getSkuId(), "qty", payment.getQty())
+        );
     }
 
-    private boolean doBusiness(long id) {
-        // 模拟支付 / 风控 / 撮合逻辑
-        return Math.random() > 0.5;
-    }
 
 
 }

@@ -1,6 +1,7 @@
 package com.z.shop.common;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
@@ -13,6 +14,7 @@ public class Order {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private LocalDateTime payingAt;
+    private BigDecimal amount;
 
     public Long getOrderId() {
         return orderId;
@@ -78,17 +80,11 @@ public class Order {
         this.updateTime = updateTime;
     }
 
-    public Order() {
+    public BigDecimal getAmount() {
+        return amount;
     }
 
-    public Order(Long orderId, Long userId, String skuId, int qty, String status, LocalDateTime createTime, LocalDateTime updateTime, LocalDateTime payingAt) {
-        this.orderId = orderId;
-        this.userId = userId;
-        this.skuId = skuId;
-        this.qty = qty;
-        this.status = status;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
-        this.payingAt = payingAt;
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
 }

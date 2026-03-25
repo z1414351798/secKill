@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @RestController
@@ -27,18 +28,9 @@ public class OrderController {
     @PostMapping("/seckill")
     public Response<Order> seckill(@RequestHeader("X-User-Id") Long userId,
                                    @RequestParam String skuId,
-                                   @RequestParam int qty) {
-        return orderService.createOrder(fastSnowflakeIdGenerator.nextId(),userId, skuId, qty);
-    }
-
-    @PostMapping("/updateStatusAndPayingAtWhenInit")
-    public int updateStatusAndPayingAtWhenInit(@RequestParam Long orderId, @RequestParam String status, @RequestParam  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime payingAt){
-        return orderService.updateStatusAndPayingAtWhenInit(orderId,status,payingAt);
-    }
-
-    @PostMapping("/markPaid")
-    public int markPaid(@RequestParam Long orderId){
-        return orderService.markPaid(orderId);
+                                   @RequestParam int qty,
+                                   @RequestParam BigDecimal amount) {
+        return orderService.createOrder(fastSnowflakeIdGenerator.nextId(),userId, skuId, qty, amount);
     }
 
     @GetMapping("/findById")
@@ -46,18 +38,15 @@ public class OrderController {
         return orderService.findById(orderId);
     }
 
-    @PostMapping("/updatePaying")
-    public boolean updatePaying(@RequestParam Long orderId){
-        return orderMapper.updatePaying(orderId);
+
+    @GetMapping("/{orderId}/status")
+    public Response<Order> getOrderStatus(@PathVariable Long orderId) {
+        Order order = orderService.findById(orderId);
+        return Response.success(order);
     }
 
-    @PostMapping("/updateDeducting")
-    public boolean updateDeducting(@RequestParam Long orderId){
-        return orderMapper.updateDeducting(orderId);
-    }
-
-    @PostMapping("/updateRefunding")
-    public boolean updateRefunding(@RequestParam Long orderId){
-        return orderMapper.updateRefunding(orderId);
+    @PostMapping("/{orderId}/pay")
+    public Response<String> payOrder(@PathVariable Long orderId) {
+        return orderService.payOrder(orderId);
     }
 }

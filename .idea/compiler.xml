@@ -8,10 +8,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="inventory-service" />
-        <module name="order-service" />
         <module name="payment-service" />
+        <module name="zPay" />
+        <module name="order-service" />
         <module name="shop-common" />
         <module name="user-service" />
+        <module name="outbox-spring-boot-starter" />
       </profile>
       <profile name="Annotation profile for gateway" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -29,8 +31,10 @@
       <module name="gateway" options="-parameters" />
       <module name="inventory-service" options="-parameters" />
       <module name="order-service" options="-parameters" />
+      <module name="outbox-spring-boot-starter" options="" />
       <module name="payment-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
+      <module name="zPay" options="-parameters" />
     </option>
   </component>
 </project>

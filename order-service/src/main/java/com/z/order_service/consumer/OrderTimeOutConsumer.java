@@ -3,6 +3,7 @@ package com.z.order_service.consumer;
 import com.z.order_service.enums.DeductResult;
 import com.z.order_service.mapper.OrderMapper;
 import com.z.order_service.service.RedisStockService;
+import com.z.outbox.service.OutboxService;
 import com.z.shop.common.Order;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
@@ -29,22 +30,41 @@ public class OrderTimeOutConsumer
     private KafkaTemplate<String, Object> kafkaTemplate;
     @Autowired
     private RedisStockService redisStockService;
+    @Autowired
+    private OutboxService outboxService;
 
     @Override
     @Transactional
     public void onMessage(Order order) {
-        // 1️⃣ CAS 尝试进入 CANCELING
-        int ok = orderMapper.timeoutCancel(order.getOrderId());
-        if (ok == 0) {
-            // 要么已支付，要么已被处理
-            return;
+        Long orderId = order.getOrderId();
+
+        Order dbOrder = orderMapper.findById(orderId);
+        String status = dbOrder.getStatus();
+        String skuId = dbOrder.getSkuId();
+        int qty = dbOrder.getQty();
+
+        // CAS cancel
+        int ok = orderMapper.timeoutCancel(orderId);
+        if (ok == 0) return;
+
+        boolean init = orderMapper.markRollbackInit(orderId);
+        if (!init) return;
+
+        boolean processing = orderMapper.markRollbackProcessing(orderId);
+        if (!processing) return;
+
+        redisStockService.rollback(orderId,skuId,qty);
+
+        // If DB deduct likely happened → rollback DB
+        if (status.equals("DEDUCT_SUCCESS")
+                || status.equals("CAN_PAY")
+                || status.startsWith("PAY_")) {
+
+            outboxService.saveEvent(
+                    String.valueOf(orderId),
+                    "inventory-rollback-topic",
+                    Map.of("orderId", orderId, "skuId", skuId, "qty", qty)
+            );
         }
-        // 2️⃣ 只有 CAS 成功的人，才回滚 Redis
-        DeductResult rollback = redisStockService.rollback(
-                order.getOrderId(),
-                order.getSkuId(),
-                order.getQty()
-        );
-        System.out.println("Timeout rollback orderId: " + order.getOrderId());
     }
 }

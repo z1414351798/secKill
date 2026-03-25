@@ -28,20 +28,18 @@ CREATE TABLE `inventory` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
--- shop.inventory_deduct_log definition
-
-CREATE TABLE `inventory_deduct_log` (
+CREATE TABLE `inventory_stock_log` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `order_id` varchar(64) DEFAULT NULL,
   `sku_id` varchar(64) DEFAULT NULL,
   `qty` int DEFAULT NULL,
-  `status` varchar(20) DEFAULT NULL,
-  `create_time` datetime DEFAULT NULL,
-  `update_time` datetime DEFAULT NULL,
+  `status` varchar(20) DEFAULT NULL,     -- 'DEDUCT_INIT', 'DEDUCT_PROCESSING', 'DEDUCT_SUCCESS', 'DEDUCT_FAIL', 'ROLLBACK_INIT, ROLLBACK_PROCESSING , ROLLBACK_SUCCESS , ROLLBACK_FAIL'
+  `retry_count` int DEFAULT 0,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_order_sku` (`order_id`,`sku_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6800 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
+  UNIQUE KEY `uk_order_sku_type` (`order_id`,`sku_id`,`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- shop.order_outbox definition
 
@@ -132,3 +130,25 @@ CREATE TABLE `users` (
   `email` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE outbox_event (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    biz_id VARCHAR(64),
+    topic VARCHAR(64),
+    payload TEXT,
+    status VARCHAR(20), -- INIT / SENDING / SENT / FAIL
+    retry_count INT DEFAULT 0,
+    max_retry INT DEFAULT 5,
+    next_retry_time DATETIME,
+    create_time DATETIME,
+    update_time DATETIME
+);
+
+CREATE TABLE zpay_payment_order (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id BIGINT,
+    amount DECIMAL(10,2),
+    status VARCHAR(20),
+    callback_url VARCHAR(255),
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

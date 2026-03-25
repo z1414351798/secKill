@@ -2,10 +2,9 @@ package com.z.order_service.consumer;
 
 import com.z.order_service.enums.DeductResult;
 import com.z.order_service.feignClient.InventoryClient;
+import com.z.order_service.feignClient.PaymentClient;
 import com.z.order_service.mapper.OrderMapper;
-import com.z.order_service.producer.InventoryDeductProducer;
 import com.z.order_service.service.RedisStockService;
-import com.z.shop.common.InventoryDeductLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -22,8 +21,6 @@ public class PaymentResultConsumer {
     @Autowired
     private RedisStockService redisStockService;
     @Autowired
-    private InventoryDeductProducer inventoryDeductProducer;
-    @Autowired
     private InventoryClient inventoryClient;
 
     @KafkaListener(topics = "payment-result-topic", groupId = "order-group", containerFactory = "kafkaListenerContainerFactory")
@@ -34,21 +31,17 @@ public class PaymentResultConsumer {
         int qty = (int)msg.get("qty");
 
         if (success) {
-            if (!orderMapper.updatePaySuccess(orderId)){
+            if (!orderMapper.markPaySuccess(orderId)){
                 System.out.println("Order update PAY_SUCCESS failed, orderId : "+ orderId);
                 ack.acknowledge();
                 return;
             }
             DeductResult confirm = redisStockService.confirm(orderId, skuId, qty);
-            HashMap<String,Object> map = new HashMap<>();
-            map.put("skuId",skuId);
-            map.put("qty", qty);
-            map.put("orderId",orderId);
-            inventoryDeductProducer.send(map,skuId);
-            System.out.println("orderId: "+orderId+"confirm result: " + confirm);
+            boolean markFinalSuccess = orderMapper.markFinalSuccess(orderId);
+
         } else {
 
-            if (!orderMapper.updatePayFAILED(orderId)){
+            if (!orderMapper.markPayFAIL(orderId)){
                 System.out.println("Order update PAY_FAILED failed, orderId : "+ orderId);
                 ack.acknowledge();
                 return;

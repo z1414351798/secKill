@@ -10,10 +10,22 @@
     </resultMap>
     <update id="deduct">
         update inventory
-        set available = available - #{qty}
-        where sku_id = #{skuId}
-        and available >= #{qty}
+        set available = available - #{qty}, locked = locked + #{qty}
+        where sku_id = #{skuId} and available >= #{qty}
     </update>
+
+    <update id="confirm">
+        update inventory
+        set locked = locked - #{qty}
+        where sku_id = #{skuId} and locked >= #{qty}
+    </update>
+
+    <update id="rollback">
+        update inventory
+        set available = available + #{qty}, locked = locked - #{qty}
+        where sku_id = #{skuId} and locked >= #{qty}
+    </update>
+
     <insert id="save" parameterType="com.z.shop.common.Inventory">
         insert into inventory(
         sku_id, total, available, locked)
@@ -24,15 +36,5 @@
         select sku_id, total, available, locked
         from inventory
     </select>
-    <update id="confirm">
-        update inventory
-        set locked = locked - #{qty}
-        where sku_id = #{skuId}
-    </update>
-    <update id="rollback">
-        update inventory
-        set locked = locked - #{qty},
-        available = available + #{qty}
-        where sku_id = #{skuId}
-    </update>
+
 </mapper>
