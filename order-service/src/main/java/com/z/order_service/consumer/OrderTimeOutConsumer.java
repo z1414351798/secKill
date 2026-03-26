@@ -20,51 +20,62 @@ import java.util.Map;
         topic = "order-timeout-topic",
         consumerGroup = "order-timeout-group"
 )
-public class OrderTimeOutConsumer
-        implements RocketMQListener<Order> {
+public class OrderTimeOutConsumer implements RocketMQListener<Order> {
 
     @Autowired
     private OrderMapper orderMapper;
 
     @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
-    @Autowired
     private RedisStockService redisStockService;
+
     @Autowired
     private OutboxService outboxService;
 
     @Override
     @Transactional
     public void onMessage(Order order) {
+
         Long orderId = order.getOrderId();
 
+        // 1️⃣ CAS cancel (only one thread succeeds)
+        int ok = orderMapper.timeoutCancel(orderId);
+        if (ok == 0) return;
+
+        // 2️⃣ get latest data AFTER CAS
         Order dbOrder = orderMapper.findById(orderId);
         String status = dbOrder.getStatus();
         String skuId = dbOrder.getSkuId();
         int qty = dbOrder.getQty();
 
-        // CAS cancel
-        int ok = orderMapper.timeoutCancel(orderId);
-        if (ok == 0) return;
+        // 3️⃣ rollback Redis immediately
+        redisStockService.rollback(orderId, skuId, qty);
 
-        boolean init = orderMapper.markRollbackInit(orderId);
-        if (!init) return;
+        // 4️⃣ try enter rollback state machine
+        if (!orderMapper.markRollbackInit(orderId)) {
+            return;
+        }
 
-        boolean processing = orderMapper.markRollbackProcessing(orderId);
-        if (!processing) return;
+        if (!orderMapper.markRollbackProcessing(orderId)) {
+            return;
+        }
 
-        redisStockService.rollback(orderId,skuId,qty);
-
-        // If DB deduct likely happened → rollback DB
-        if (status.equals("DEDUCT_SUCCESS")
-                || status.equals("CAN_PAY")
-                || status.startsWith("PAY_")) {
-
+        // 5️⃣ trigger DB rollback ONLY if needed
+        if (needRollbackDB(status)) {
             outboxService.saveEvent(
                     String.valueOf(orderId),
                     "inventory-rollback-topic",
-                    Map.of("orderId", orderId, "skuId", skuId, "qty", qty)
+                    Map.of(
+                            "orderId", orderId,
+                            "skuId", skuId,
+                            "qty", qty
+                    )
             );
         }
+    }
+
+    private boolean needRollbackDB(String status) {
+        return "DEDUCT_SUCCESS".equals(status)
+                || "CAN_PAY".equals(status)
+                || status.startsWith("PAY_");
     }
 }

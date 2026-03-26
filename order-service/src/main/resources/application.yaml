@@ -73,6 +73,6 @@ rocketmq:
 outbox:
   batch-size: 100
   scan-interval: 1000
-  topics: inventory-deduct-topic
+  topics: inventory-deduct-topic inventory-rollback-topic
 
 

@@ -68,4 +68,4 @@ eureka:
 outbox:
   batch-size: 100
   scan-interval: 1000
-  topics: inventory-deduct-result-topic
+  topics: inventory-deduct-result-topic inventory-deduct-dead-letter-topic inventory-rollback-dead-letter-topic inventory-rollback-result-topic

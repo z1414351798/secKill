@@ -21,7 +21,7 @@
     <update id="markDeductSuccess">
         update orders
         set status = 'DEDUCT_SUCCESS'
-        where status in 'DEDUCTING'
+        where status = 'DEDUCTING'
         and order_id = #{orderId}
     </update>
 
@@ -52,7 +52,7 @@
         SET status = 'PAY_SUCCESS',
         update_time = NOW()
         WHERE order_id = #{orderId}
-        AND status = 'PAY_PROCESSING'
+        AND status in ('PAY_PROCESSING', 'PAY_FAIL')
     </update>
 
     <update id="markPayFAIL">
@@ -130,6 +130,22 @@
         update_time = NOW()
         WHERE order_id = #{orderId}
         AND status = 'ROLLBACK_PROCESSING'
+    </update>
+
+    <update id="markRefundSuccess">
+        UPDATE orders
+        SET status = 'REFUND_SUCCESS',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status IN ('TIME_OUT_CANCEL','ROLLBACK_SUCCESS')
+    </update>
+
+    <update id="markRefundFail">
+        UPDATE orders
+        SET status = 'REFUND_FAIL',
+        update_time = NOW()
+        WHERE order_id = #{orderId}
+        AND status IN ('TIME_OUT_CANCEL','ROLLBACK_SUCCESS')
     </update>
 
 </mapper>

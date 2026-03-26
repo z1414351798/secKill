@@ -28,14 +28,6 @@
         AND status IN ('PAY_INIT','PAY_FAIL')
     </update>
 
-    <!-- 标记支付成功 -->
-    <update id="markPaySuccess">
-        UPDATE payment
-        SET status = 'PAY_SUCCESS', update_time = NOW()
-        WHERE order_id = #{orderId}
-        AND status = 'PAY_PROCESSING'
-    </update>
-
     <!-- 标记支付失败 -->
     <update id="markPayFail">
         UPDATE payment
@@ -74,6 +66,45 @@
         SET status = 'REFUND_FAIL', update_time = NOW()
         WHERE order_id = #{orderId} AND payment_id = #{paymentId}
         AND status = 'REFUND_PROCESSING'
+    </update>
+
+    <update id="incrementRefundRetry">
+        UPDATE payment
+        SET refund_retry_count = refund_retry_count + 1
+        WHERE order_id = #{orderId}
+        AND payment_id = #{paymentId}
+        AND status = 'REFUND_FAIL'
+        AND refund_retry_count <![CDATA[ < ]]> #{maxRetry}
+    </update>
+
+    <update id="markRefundFailMaxRetry">
+        UPDATE payment
+        SET status = 'REFUND_FAIL_MAX_RETRY'
+        WHERE order_id = #{orderId}
+        AND payment_id = #{paymentId}
+        AND refund_retry_count >= #{maxRetry}
+    </update>
+
+    <update id="incrementPayRetry">
+        UPDATE payment
+        SET pay_retry_count = pay_retry_count + 1
+        WHERE order_id = #{orderId}
+        AND status = 'PAY_FAIL'
+        AND pay_retry_count <![CDATA[ < ]]> #{maxRetry}
+    </update>
+
+    <update id="markPayFailMaxRetry">
+        UPDATE payment
+        SET status = 'PAY_FAIL_MAX_RETRY'
+        WHERE order_id = #{orderId}
+        AND pay_retry_count >= #{maxRetry}
+    </update>
+
+    <update id="markPaySuccess">
+        UPDATE payment
+        SET status = 'PAY_SUCCESS'
+        WHERE order_id = #{orderId}
+        AND status IN ('PAY_PROCESSING','PAY_FAIL')
     </update>
 
 </mapper>

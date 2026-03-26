@@ -67,3 +67,4 @@ eureka:
 outbox:
   batch-size: 100
   scan-interval: 1000
+  topics: payment_result_topic refund_result_topic

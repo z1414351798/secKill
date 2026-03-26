@@ -35,4 +35,18 @@ public interface PaymentMapper {
 
     boolean markRefundInit(@Param("orderId") Long orderId,
                            @Param("paymentId") Long paymentId);
+
+    int incrementRefundRetry(@Param("orderId") Long orderId,
+                                 @Param("paymentId") Long paymentId,
+                                 @Param("maxRetry") int maxRetry);
+
+    int markRefundFailMaxRetry(@Param("orderId") Long orderId,
+                                   @Param("paymentId") Long paymentId,
+                                   @Param("maxRetry") int maxRetry);
+
+    boolean markPayFailMaxRetry(@Param("orderId") Long orderId,
+                            @Param("maxRetry") int maxRetry);
+
+    int incrementPayRetry(@Param("orderId") Long orderId,
+                          @Param("maxRetry") int maxRetry);
 }

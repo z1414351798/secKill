@@ -38,4 +38,8 @@ public interface OrderMapper {
     boolean markRollbackFail(@Param("orderId") Long orderId);
 
     boolean markRollbackSuccess(@Param("orderId") Long orderId);
+
+    int markRefundSuccess(@Param("orderId") Long orderId);
+
+    int markRefundFail(@Param("orderId") Long orderId);
 }
