@@ -1,5 +1,4 @@
 server:
-  port: 8082
   servlet:
     context-path: /payment-service
 spring:
@@ -28,7 +27,7 @@ spring:
     bootstrap-servers: localhost:9092,localhost:9094,localhost:9096
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       properties:
         enable.idempotence: true
@@ -37,7 +36,7 @@ spring:
       auto-offset-reset: earliest
       max-poll-records: 50
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
         spring.json.trusted.packages: com.z.shop.common
 
@@ -54,7 +53,7 @@ spring:
     connection-timeout: 30000
 
 mybatis:
-  mapper-locations: classpath:mapper/*Mapper.xml
+  mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.z.payment_service.domain
   configuration:
     map-underscore-to-camel-case: true
@@ -67,4 +66,4 @@ eureka:
 outbox:
   batch-size: 100
   scan-interval: 1000
-  topics: payment_result_topic refund_result_topic
+  topics: [payment-result-topic, refund_result_topic, refund-topic, zpay-callback-topic]

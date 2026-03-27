@@ -1,3 +1,7 @@
+server:
+  servlet:
+    context-path: /zpay-service
+
 spring:
   application:
     name: zPay

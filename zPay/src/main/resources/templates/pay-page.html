@@ -9,11 +9,11 @@
 
 <p>Order ID: <span th:text="${orderId}"></span></p>
 
-<button th:onclick="'location.href=\'/mock/success?orderId=' + ${orderId} + '\''">
+<button th:onclick="'location.href=\'/zpay-service/mock/success?orderId=' + ${orderId} + '\''">
     Pay Success
 </button>
 
-<button th:onclick="'location.href=\'/mock/fail?orderId=' + ${orderId} + '\''">
+<button th:onclick="'location.href=\'/zpay-service/mock/fail?orderId=' + ${orderId} + '\''">
     Pay Fail
 </button>
 

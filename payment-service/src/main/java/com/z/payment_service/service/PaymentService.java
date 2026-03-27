@@ -30,9 +30,8 @@ public class PaymentService {
     OrderClient orderClient;
 
     @Transactional
-    public void process(PaymentDto dto) {
+    public void process(Long orderId, String status) {
 
-        Long orderId = dto.getOrderId();
         Order order = orderClient.findById(orderId);
 
         // 1️⃣ 查询支付记录
@@ -47,7 +46,7 @@ public class PaymentService {
             return; // 已成功，直接返回
         }
 
-        boolean success = "SUCCESS".equals(dto.getStatus());
+        boolean success = "SUCCESS".equals(status);
 
         if (success) {
 
@@ -76,7 +75,7 @@ public class PaymentService {
             // 4️⃣ outbox（事务内）
             outboxService.saveEvent(
                     String.valueOf(orderId),
-                    "payment_result_topic",
+                    "payment-result-topic",
                     Map.of(
                             "orderId", orderId,
                             "success", true,
@@ -107,7 +106,7 @@ public class PaymentService {
                 // 发送最终失败事件
                 outboxService.saveEvent(
                         String.valueOf(orderId),
-                        "payment_result_topic",
+                        "payment-result-topic",
                         Map.of(
                                 "orderId", orderId,
                                 "success", false,
@@ -120,7 +119,10 @@ public class PaymentService {
                 outboxService.saveEvent(
                         String.valueOf(orderId),
                         "payment-dead-letter-topic",
-                        dto
+                        Map.of(
+                                "orderId", orderId,
+                                "status", status
+                        )
                 );
 
             } else {

@@ -25,6 +25,6 @@ public interface OrderClient {
     @PostMapping("/order-service/order/updateRefunding")
     boolean updateRefunding(@RequestParam Long orderId);
 
-    @GetMapping("/order/findById")
+    @GetMapping("/order-service/order/findById")
     Order findById(@RequestParam Long orderId);
 }

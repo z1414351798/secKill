@@ -13,12 +13,12 @@ import org.springframework.kafka.listener.ContainerProperties;
 @EnableKafka
 public class KafkaConfig {
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, Object>
+    public ConcurrentKafkaListenerContainerFactory<String, String>
     kafkaListenerContainerFactory(
-            ConsumerFactory<String, Object> consumerFactory,
-            KafkaTemplate<String, Object> kafkaTemplate) {
+            ConsumerFactory<String, String> consumerFactory,
+            KafkaTemplate<String, String> kafkaTemplate) {
 
-        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(consumerFactory);

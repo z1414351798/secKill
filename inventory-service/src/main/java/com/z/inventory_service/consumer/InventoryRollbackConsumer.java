@@ -1,5 +1,6 @@
 package com.z.inventory_service.consumer;
 
+import com.alibaba.fastjson2.JSON;
 import com.z.inventory_service.feignClient.OrderClient;
 import com.z.inventory_service.mapper.InventoryMapper;
 import com.z.inventory_service.mapper.InventoryStockLogMapper;
@@ -42,11 +43,12 @@ public class InventoryRollbackConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
-    public void rollbackStock(Map<String, Object> msg, Acknowledgment ack) {
+    public void rollbackStock(String msg, Acknowledgment ack) {
 
-        String skuId = (String) msg.get("skuId");
-        int qty = (int) msg.get("qty");
-        Long orderId = (Long) msg.get("orderId");
+        Map<String, Object> map = JSON.parseObject(msg);
+        String skuId = (String) map.get("skuId");
+        int qty = (int) map.get("qty");
+        Long orderId = ((Number) map.get("orderId")).longValue();
 
         // 0️⃣ 防止“已最终成功订单”被回滚（重要保护）
         Order order = orderClient.findById(orderId);

@@ -8,10 +8,13 @@ import com.z.order_service.mapper.OrderMapper;
 import com.z.order_service.producer.OrderTimeoutProducer;
 
 import com.z.outbox.service.OutboxService;
+import com.z.outbox.task.OutboxSendTask;
 import com.z.shop.common.Order;
 import com.z.shop.common.Payment;
 import com.z.shop.common.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -24,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@Slf4j
 public class OrderService {
 
     @Autowired
@@ -44,6 +46,8 @@ public class OrderService {
 
     @Autowired
     private OutboxService outboxService;
+
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     @Transactional
     public Response<Order> createOrder(Long orderId , Long userId, String skuId, int qty, BigDecimal amount) {
@@ -134,7 +138,8 @@ public class OrderService {
         return orderMapper.findById(orderId);
     }
 
-    public Response<String> payOrder(Long orderId) {
+    @Transactional
+    public Response<String>     payOrder(Long orderId) {
 
         boolean markPayInit = orderMapper.markPayInit(orderId);
         if (!markPayInit) {
@@ -155,6 +160,8 @@ public class OrderService {
             if (orderMapper.markPayProcessing(orderId)) {
                 return Response.success(payUrl.getData());
             }
+        } else {
+            throw new RuntimeException("create payment fail");
         }
 
         return Response.error("Create payment error");

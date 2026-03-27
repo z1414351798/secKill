@@ -1,5 +1,6 @@
 package com.z.zPay.controller;
 
+import com.z.zPay.entity.PaymentRequest;
 import com.z.zPay.service.ZPayPaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,10 +15,12 @@ public class ZPayPaymentController {
     private ZPayPaymentService zPayPaymentService;
 
     @PostMapping("/create")
-    public String create(@RequestParam Long orderId,
-                         @RequestParam Double amount,
-                         @RequestParam String callbackUrl) {
-        return zPayPaymentService.createPayment(orderId, amount, callbackUrl);
+    public String create(@RequestBody PaymentRequest req) {
+        return zPayPaymentService.createPayment(
+                req.getOrderId(),
+                req.getAmount(),
+                req.getCallbackUrl()
+        );
     }
 
     @GetMapping("/success")

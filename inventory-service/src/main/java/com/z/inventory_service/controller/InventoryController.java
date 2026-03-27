@@ -25,13 +25,5 @@ public class InventoryController {
         return inventoryMapper.findAll();
     }
 
-    @GetMapping("/getDeductLog")
-    public InventoryStockLog getDeductLog(@RequestParam Long orderId, @RequestParam String skuId){
-        return inventoryStockLogMapper.selectByOrderIdAndSkuId(orderId, skuId);
-    }
 
-    @PostMapping("/addDeductLog")
-    public int addDeductLog(@RequestBody InventoryStockLog inventoryStockLog){
-        return inventoryStockLogMapper.insertIgnore(inventoryStockLog);
-    }
 }

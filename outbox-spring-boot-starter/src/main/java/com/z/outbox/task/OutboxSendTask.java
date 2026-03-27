@@ -1,5 +1,6 @@
 package com.z.outbox.task;
 
+import com.alibaba.fastjson2.JSON;
 import com.z.outbox.domain.OutboxEvent;
 import com.z.outbox.mapper.OutboxEventMapper;
 import com.z.outbox.properties.OutboxProperties;
@@ -93,6 +94,7 @@ public class OutboxSendTask {
             if (mapper.markSending(event.getId()) == 0) {
                 return;
             }
+
 
             // 2️⃣ 发送 Kafka（异步）
             kafkaTemplate.send(event.getTopic(), event.getBizId(), event.getPayload())

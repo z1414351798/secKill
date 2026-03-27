@@ -3,16 +3,16 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.z.payment_service.mapper.PaymentMapper">
 
-    <select id="selectByOrderIdAndPaymentId" resultType="Payment">
+    <select id="selectByOrderIdAndPaymentId" resultType="com.z.shop.common.Payment">
         select * from payment where order_id = #{orderId} and payment_id = #{paymentId}
     </select>
 
-    <select id="selectByOrderId" resultType="Payment">
+    <select id="selectByOrderId" resultType="com.z.shop.common.Payment">
         select * from payment where order_id = #{orderId}
     </select>
 
     <!-- 插入 INIT -->
-    <insert id="insertPayInit" parameterType="com.z.payment_service.domain.Payment">
+    <insert id="insertPayInit" parameterType="com.z.shop.common.Payment">
         INSERT IGNORE INTO payment (
         payment_id, order_id, sku_id, qty, status, create_time, update_time
         ) VALUES (

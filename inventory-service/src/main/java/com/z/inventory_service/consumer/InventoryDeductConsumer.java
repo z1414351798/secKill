@@ -1,5 +1,6 @@
 package com.z.inventory_service.consumer;
 
+import com.alibaba.fastjson2.JSON;
 import com.z.inventory_service.mapper.InventoryMapper;
 import com.z.inventory_service.mapper.InventoryStockLogMapper;
 import com.z.outbox.service.OutboxService;
@@ -40,11 +41,12 @@ public class InventoryDeductConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
-    public void deductStock(Map<String, Object> msg, Acknowledgment ack) {
+    public void deductStock(String msg, Acknowledgment ack) {
 
-        String skuId = (String) msg.get("skuId");
-        int qty = (int) msg.get("qty");
-        Long orderId = (Long) msg.get("orderId");
+        Map<String, Object> map = JSON.parseObject(msg);
+        String skuId = (String) map.get("skuId");
+        int qty = (int) map.get("qty");
+        Long orderId = ((Number) map.get("orderId")).longValue();
 
         // 1️⃣ 幂等插入（依赖唯一索引 order_id + sku_id）
         inventoryStockLogMapper.insertIgnore(

@@ -12,7 +12,7 @@ public interface OutboxEventMapper {
 
     int insert(OutboxEvent event);
 
-    List<OutboxEvent> selectReadyEvents(@Param("limit") int limit, @Param("topic") List<String> topics);
+    List<OutboxEvent> selectReadyEvents(@Param("limit") int limit, @Param("topics") List<String> topics);
 
     int markSending(@Param("id") Long id);
 

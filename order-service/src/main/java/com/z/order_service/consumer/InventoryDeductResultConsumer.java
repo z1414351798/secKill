@@ -1,5 +1,6 @@
 package com.z.order_service.consumer;
 
+import com.alibaba.fastjson2.JSON;
 import com.z.order_service.mapper.OrderMapper;
 import com.z.outbox.task.OutboxSendTask;
 import org.slf4j.Logger;
@@ -24,9 +25,10 @@ public class InventoryDeductResultConsumer {
             groupId = "order-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consume(Map<String, Object> msg, Acknowledgment ack) {
-        Long orderId = (Long) msg.get("orderId");
-        boolean success = (boolean) msg.get("success");
+    public void consume(String msg, Acknowledgment ack) {
+        Map<String, Object> map = JSON.parseObject(msg);
+       Long  orderId = ((Number) map.get("orderId")).longValue();
+       boolean success = (boolean) map.get("success");
 
         try {
             if (success) {

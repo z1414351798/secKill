@@ -12,4 +12,7 @@ kafka-topics --create --topic inventory-rollback-topic --bootstrap-server kafka1
 kafka-topics --create --topic inventory-rollback-dead-letter-topic --bootstrap-server kafka1:19092 --partitions 6 --replication-factor 3
 kafka-topics --create --topic inventory-rollback-result-topic --bootstrap-server kafka1:19092 --partitions 6 --replication-factor 3
 
+kafka-topics --create --topic payment-dead-letter-topic --bootstrap-server kafka1:19092 --partitions 6 --replication-factor 3
+kafka-topics --create --topic refund-dead-letter-topic --bootstrap-server kafka1:19092 --partitions 6 --replication-factor 3
 
+kafka-topics --create --topic zpay-callback-topic --bootstrap-server kafka1:19092 --partitions 6 --replication-factor 3

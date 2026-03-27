@@ -1,5 +1,6 @@
 package com.z.order_service.consumer;
 
+import com.alibaba.fastjson2.JSON;
 import com.z.order_service.enums.DeductResult;
 import com.z.order_service.feignClient.InventoryClient;
 import com.z.order_service.feignClient.PaymentClient;
@@ -24,11 +25,12 @@ public class PaymentResultConsumer {
     private InventoryClient inventoryClient;
 
     @KafkaListener(topics = "payment-result-topic", groupId = "order-group", containerFactory = "kafkaListenerContainerFactory")
-    public void consume(Map<String, Object> msg, Acknowledgment ack) {
-        Long orderId = (Long)(msg.get("orderId"));
-        boolean success = (boolean)msg.get("success");
-        String skuId = msg.get("skuId").toString();
-        int qty = (int)msg.get("qty");
+    public void consume(String msg, Acknowledgment ack) {
+        Map<String, Object> map = JSON.parseObject(msg);
+        Long  orderId = ((Number) map.get("orderId")).longValue();
+        boolean success = (boolean) map.get("success");
+        String skuId = map.get("skuId").toString();
+        int qty = (int)map.get("qty");
 
         if (success) {
             if (!orderMapper.markPaySuccess(orderId)){

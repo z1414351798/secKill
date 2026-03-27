@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface ZPayPaymentOrderMapper {
 
-    @Insert("INSERT INTO zpay_payment_order(order_id, amount, status, callback_url) VALUES(#{orderId}, #{amount}, #{status}, #{callbackUrl})")
+    @Insert("INSERT IGNORE INTO zpay_payment_order(order_id, amount, status, callback_url) VALUES(#{orderId}, #{amount}, #{status}, #{callbackUrl})")
     void insert(ZPayPaymentOrder order);
 
     @Select("SELECT * FROM zpay_payment_order WHERE order_id = #{orderId}")

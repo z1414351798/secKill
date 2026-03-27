@@ -1,5 +1,6 @@
 package com.z.payment_service.consumer;
 
+import com.alibaba.fastjson2.JSON;
 import com.z.payment_service.mapper.PaymentMapper;
 import com.z.outbox.service.OutboxService;
 import com.z.shop.common.Payment;
@@ -33,10 +34,11 @@ public class RefundConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
-    public void refund(Map<String, Object> msg, Acknowledgment ack) {
+    public void refund(String msg, Acknowledgment ack) {
 
-        Long orderId = (Long) msg.get("orderId");
-        Long paymentId = (Long) msg.get("paymentId");
+        Map<String, Object> map = JSON.parseObject(msg);
+        Long orderId = (Long) map.get("orderId");
+        Long paymentId = (Long) map.get("paymentId");
 
         // 1️⃣ 查询支付记录
         Payment payment = paymentMapper.selectByOrderIdAndPaymentId(orderId, paymentId);
