@@ -1,11 +1,15 @@
 package com.z.shop.common;
 
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
 public class Order {
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long orderId;
     private Long userId;
     private String skuId;

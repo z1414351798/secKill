@@ -26,7 +26,7 @@ public class OrderController {
     private FastSnowflakeIdGenerator fastSnowflakeIdGenerator;
 
     @PostMapping("/seckill")
-    public Response<Order> seckill(@RequestHeader("X-User-Id") Long userId,
+    public Response<Order> seckill(@RequestHeader(value = "X-User-Id" , required = false) Long userId,
                                    @RequestParam String skuId,
                                    @RequestParam int qty,
                                    @RequestParam BigDecimal amount) {
@@ -48,5 +48,10 @@ public class OrderController {
     @PostMapping("/{orderId}/pay")
     public Response<String> payOrder(@PathVariable Long orderId) {
         return orderService.payOrder(orderId);
+    }
+
+    @PostMapping("/markPayProcessing")
+    public boolean markPayProcessing(@RequestParam Long orderId){
+        return orderMapper.markPayProcessing(orderId);
     }
 }

@@ -58,9 +58,9 @@ public class OrderService {
 //                return Response.error("系统繁忙");
 //            }
 
-            if (!redisStockService.checkUserIdempotent(skuId, userId)) {
-                return Response.error("请勿重复下单");
-            }
+//            if (!redisStockService.checkUserIdempotent(skuId, userId)) {
+//                return Response.error("请勿重复下单");
+//            }
 
 
             // 2. Redis预扣库存
